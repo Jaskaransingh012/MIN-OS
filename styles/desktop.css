@@ -1,0 +1,279 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@300;400;600&family=Inter:wght@300;400;500;600&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #0A0A0A;
+    color: #E0E0E0;
+    font-family: 'Inter', -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#desktop-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #0A0A0A;
+    z-index: 9998;
+    opacity: 0;
+    animation: desktopFadeIn 1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    animation-delay: 0.2s;
+}
+
+@keyframes desktopFadeIn {
+    0% { opacity: 0; transform: scale(0.98); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Scanline overlay (applied by Wallpaper) ── */
+.scanline-overlay {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg,
+            rgba(255, 255, 255, 0.008) 0px,
+            rgba(255, 255, 255, 0.008) 2px,
+            rgba(0, 0, 0, 0.02) 2px,
+            rgba(0, 0, 0, 0.02) 4px);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ── Workspace (filled by DesktopGrid) ── */
+.desktop-workspace {
+    flex: 1;
+    position: relative;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow: hidden;
+}
+
+/* ── Greeting (optional, can be in Desktop) ── */
+.greeting {
+    text-align: center;
+    opacity: 0;
+    animation: greetingRise 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    animation-delay: 0.6s;
+    user-select: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes greetingRise {
+    0% { opacity: 0; transform: translate(-50%, -40%); }
+    100% { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.greeting .hello {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: 3.5rem;
+    color: #E0E0E0;
+    letter-spacing: -0.02em;
+}
+.greeting .hello span {
+    color: #C9A96E;
+}
+.greeting .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 300;
+    color: #888888;
+    margin-top: 0.6rem;
+    letter-spacing: 0.06em;
+}
+.greeting .sub .cursor-blink {
+    display: inline-block;
+    width: 2px;
+    height: 0.9em;
+    background: #C9A96E;
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* ── Desktop Grid (icons container) ── */
+.desktop-grid {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    z-index: 2;
+}
+
+/* ── Individual Icon ── */
+.desktop-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: default;
+    background: rgba(10, 10, 10, 0.3);
+    backdrop-filter: blur(4px);
+    min-width: 80px;
+}
+.desktop-icon:hover {
+    border-color: #353839;
+    background: rgba(53, 56, 57, 0.15);
+    transform: translateY(-2px);
+}
+.desktop-icon .icon {
+    font-size: 1.6rem;
+    line-height: 1;
+    color: #C9A96E;
+    opacity: 0.6;
+}
+.desktop-icon .label {
+    font-size: 0.65rem;
+    font-weight: 300;
+    color: #888888;
+    letter-spacing: 0.02em;
+}
+
+/* ── Taskbar ── */
+.taskbar {
+    flex-shrink: 0;
+    height: 56px;
+    background: rgba(10, 10, 10, 0.75);
+    backdrop-filter: blur(16px) saturate(1.2);
+    border-top: 1px solid #353839;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    z-index: 2;
+    position: relative;
+}
+
+.taskbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+}
+
+.taskbar .logo-small {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: #E0E0E0;
+    letter-spacing: -0.02em;
+}
+.taskbar .logo-small span {
+    color: #C9A96E;
+}
+
+.taskbar .app-indicators {
+    display: flex;
+    gap: 0.6rem;
+}
+.taskbar .app-indicator {
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 300;
+    color: #888888;
+    background: rgba(53, 56, 57, 0.15);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+.taskbar .app-indicator.active {
+    color: #E0E0E0;
+    border-color: #353839;
+    background: rgba(53, 56, 57, 0.2);
+}
+.taskbar .app-indicator:hover {
+    border-color: #353839;
+}
+
+.taskbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    font-size: 0.75rem;
+    font-weight: 300;
+    color: #888888;
+}
+
+.taskbar-right .clock {
+    font-family: 'JetBrains Mono', monospace;
+    color: #E0E0E0;
+    letter-spacing: 0.04em;
+}
+.taskbar-right .clock .seconds {
+    color: #888888;
+    font-weight: 300;
+}
+.taskbar-right .divider {
+    width: 1px;
+    height: 20px;
+    background: #353839;
+}
+.taskbar-right .status-icon {
+    color: #C9A96E;
+    font-size: 0.9rem;
+    opacity: 0.6;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .greeting .hello {
+        font-size: 2.4rem;
+    }
+    .greeting .sub {
+        font-size: 0.7rem;
+    }
+    .desktop-grid {
+        top: 1rem;
+        left: 1rem;
+        gap: 0.8rem;
+    }
+    .desktop-icon {
+        padding: 0.5rem 0.6rem;
+        min-width: 60px;
+    }
+    .desktop-icon .icon {
+        font-size: 1.2rem;
+    }
+    .desktop-icon .label {
+        font-size: 0.55rem;
+    }
+    .taskbar {
+        height: 48px;
+        padding: 0 1rem;
+    }
+    .taskbar .logo-small {
+        font-size: 0.9rem;
+    }
+    .taskbar .app-indicators {
+        display: none;
+    }
+    .taskbar-right .clock {
+        font-size: 0.65rem;
+    }
+}

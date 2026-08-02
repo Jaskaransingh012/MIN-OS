@@ -1,0 +1,88 @@
+/*==========================
+    COLORS
+===========================*/
+
+:root{
+
+    /* Primary */
+    --primary:#4f8cff;
+    --primary-light:#7db2ff;
+    --primary-dark:#215dc7;
+
+    /* Background */
+    --bg-primary:#202124;
+    --bg-secondary:#2d2f31;
+    --bg-tertiary:#3c4043;
+
+    /* Window */
+    --window-bg:#2a2d30;
+    --window-header:#1f2022;
+    --window-border:#4d4d4d;
+
+    /* Text */
+    --text-primary:#ffffff;
+    --text-secondary:#d1d1d1;
+    --text-muted:#8d8d8d;
+
+    /* Status */
+    --success:#28c840;
+    --warning:#ffc107;
+    --danger:#ff4b4b;
+    --info:#00b7ff;
+
+    /* Shadows */
+    --shadow-small:0 2px 5px rgba(0,0,0,.2);
+    --shadow-medium:0 8px 18px rgba(0,0,0,.35);
+    --shadow-large:0 12px 30px rgba(0,0,0,.45);
+
+    /* Radius */
+    --radius-xs:3px;
+    --radius-sm:6px;
+    --radius-md:10px;
+    --radius-lg:16px;
+
+    /* Font */
+    --font-family:"Segoe UI",sans-serif;
+
+    --font-xs:11px;
+    --font-sm:13px;
+    --font-md:15px;
+    --font-lg:18px;
+    --font-xl:24px;
+
+    /* Spacing */
+
+    --space-1:4px;
+    --space-2:8px;
+    --space-3:12px;
+    --space-4:16px;
+    --space-5:24px;
+    --space-6:32px;
+
+    /* Window */
+
+    --window-width:700px;
+    --window-height:450px;
+    --titlebar-height:35px;
+
+    /* Dock */
+
+    --dock-height:70px;
+
+    /* Taskbar */
+
+    --taskbar-height:34px;
+
+    /* Animation */
+
+    --transition-fast:.15s;
+    --transition-normal:.3s;
+    --transition-slow:.5s;
+
+    --z-desktop:1;
+    --z-window:50;
+    --z-dock:100;
+    --z-taskbar:110;
+    --z-context:500;
+    --z-modal:1000;
+}

@@ -1,0 +1,231 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@300;400;600&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #0A0A0A;
+    color: #E0E0E0;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+#boot-screen {
+    position: fixed;
+    inset: 0;
+    background-color: #0A0A0A;
+    z-index: 9999;
+    padding: 2rem 3rem;
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+#boot-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#boot-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg,
+            rgba(255, 255, 255, 0.01) 0px,
+            rgba(255, 255, 255, 0.01) 2px,
+            rgba(0, 0, 0, 0.02) 2px,
+            rgba(0, 0, 0, 0.02) 4px);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.boot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid #353839;
+    padding-bottom: 0.6rem;
+    margin-bottom: 1.5rem;
+    flex-shrink: 0;
+    z-index: 2;
+}
+
+.boot-header .logo {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-style: italic;
+    color: #E0E0E0;
+    letter-spacing: -0.02em;
+}
+
+.boot-header .logo span {
+    color: #C9A96E;
+}
+
+.boot-header .version {
+    font-size: 0.75rem;
+    font-weight: 300;
+    color: #888888;
+    letter-spacing: 0.04em;
+}
+
+.boot-progress {
+    width: 100%;
+    height: 2px;
+    background-color: #353839;
+    margin-bottom: 1.8rem;
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+    z-index: 2;
+}
+
+.boot-progress .fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #888888, #C9A96E);
+    border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 0 16px rgba(201, 169, 110, 0.2);
+}
+
+.boot-logs {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: #E0E0E0;
+    scrollbar-width: thin;
+    scrollbar-color: #353839 transparent;
+    z-index: 2;
+    padding-right: 4px;
+}
+
+.boot-logs::-webkit-scrollbar {
+    width: 4px;
+}
+.boot-logs::-webkit-scrollbar-track {
+    background: transparent;
+}
+.boot-logs::-webkit-scrollbar-thumb {
+    background: #353839;
+    border-radius: 4px;
+}
+
+.log-line {
+    opacity: 0;
+    animation: logFade 0.3s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    display: flex;
+    gap: 1.2rem;
+    padding: 0.1rem 0;
+    border-bottom: 1px solid rgba(53, 56, 57, 0.1);
+}
+.log-line:last-child {
+    border-bottom: none;
+}
+
+.log-line .time {
+    color: #888888;
+    min-width: 80px;
+    flex-shrink: 0;
+    font-weight: 300;
+}
+.log-line .status {
+    min-width: 60px;
+    flex-shrink: 0;
+    font-weight: 600;
+}
+.log-line .status.ok {
+    color: #C9A96E;
+}
+.log-line .status.info {
+    color: #888888;
+}
+.log-line .status.fail {
+    color: #CF6679;
+}
+.log-line .msg {
+    color: #E0E0E0;
+    font-weight: 300;
+}
+.log-line .msg .highlight {
+    color: #C9A96E;
+    font-weight: 400;
+}
+
+@keyframes logFade {
+    0% {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.boot-prompt {
+    margin-top: 1.2rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #353839;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: #888888;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    z-index: 2;
+}
+.boot-prompt .prompt-text {
+    font-weight: 300;
+}
+.boot-prompt .cursor {
+    display: inline-block;
+    width: 10px;
+    height: 1.2rem;
+    background: #C9A96E;
+    animation: blink 1s step-end infinite;
+    border-radius: 1px;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+@media (max-width: 640px) {
+    #boot-screen {
+        padding: 1.2rem 1.2rem;
+    }
+    .boot-header .logo {
+        font-size: 1.4rem;
+    }
+    .boot-header .version {
+        font-size: 0.65rem;
+    }
+    .boot-logs {
+        font-size: 0.7rem;
+        line-height: 1.6;
+    }
+    .log-line {
+        gap: 0.6rem;
+    }
+    .log-line .time {
+        min-width: 60px;
+    }
+    .log-line .status {
+        min-width: 50px;
+    }
+    .boot-prompt {
+        font-size: 0.7rem;
+    }
+}

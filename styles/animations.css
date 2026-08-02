@@ -1,0 +1,183 @@
+/* Fade */
+
+@keyframes fadeIn{
+
+    from{
+
+        opacity:0;
+    }
+
+    to{
+
+        opacity:1;
+    }
+}
+
+@keyframes fadeOut{
+
+    from{
+
+        opacity:1;
+    }
+
+    to{
+
+        opacity:0;
+    }
+}
+
+/* Scale */
+
+@keyframes scaleIn{
+
+    from{
+
+        opacity:0;
+        transform:scale(.9);
+    }
+
+    to{
+
+        opacity:1;
+        transform:scale(1);
+    }
+}
+
+@keyframes scaleOut{
+
+    from{
+
+        opacity:1;
+        transform:scale(1);
+    }
+
+    to{
+
+        opacity:0;
+        transform:scale(.9);
+    }
+}
+
+/* Window */
+
+@keyframes windowOpen{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(30px) scale(.85);
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0) scale(1);
+    }
+}
+
+@keyframes windowClose{
+
+    from{
+
+        opacity:1;
+
+        transform:scale(1);
+    }
+
+    to{
+
+        opacity:0;
+
+        transform:scale(.85);
+    }
+}
+
+/* Dock */
+
+@keyframes dockBounce{
+
+    0%{
+
+        transform:translateY(0);
+    }
+
+    50%{
+
+        transform:translateY(-10px);
+    }
+
+    100%{
+
+        transform:translateY(0);
+    }
+}
+
+/* Notification */
+
+@keyframes notificationSlide{
+
+    from{
+
+        transform:translateX(100%);
+        opacity:0;
+    }
+
+    to{
+
+        transform:translateX(0);
+        opacity:1;
+    }
+}
+
+/* Spinner */
+
+@keyframes spin{
+
+    from{
+
+        transform:rotate(0);
+    }
+
+    to{
+
+        transform:rotate(360deg);
+    }
+}
+
+
+.fade-in{
+
+    animation:fadeIn .25s ease;
+}
+
+.fade-out{
+
+    animation:fadeOut .25s ease;
+}
+
+.scale-in{
+
+    animation:scaleIn .25s ease;
+}
+
+.window-open{
+
+    animation:windowOpen .25s ease;
+}
+
+.window-close{
+
+    animation:windowClose .2s ease forwards;
+}
+
+.bounce{
+
+    animation:dockBounce .5s;
+}
+
+.spin{
+
+    animation:spin 1s linear infinite;
+}
