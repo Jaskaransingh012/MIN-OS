@@ -1,3 +1,4 @@
+import Desktop from "../../desktop/Desktop.js";
 import BootScreen from "../../ui/windows/bootScreen.js";
 
 export default class Bootstrapper{
@@ -88,11 +89,18 @@ export default class Bootstrapper{
 
         this.boot.setStatus("Loading Desktop");
 
+        const desktop = new Desktop();
+
+
+        this.kernel.register("desktop", desktop);
+
         this.boot.addLog("Desktop Ready");
 
         this.boot.setProgress(80);
 
         await this.sleep();
+
+        desktop.mount();
 
     }
 
