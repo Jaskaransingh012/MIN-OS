@@ -1,5 +1,6 @@
 import Desktop from "../../desktop/Desktop.js";
 import BootScreen from "../../ui/windows/bootScreen.js";
+import StorageFactory from "../storage/StorageFactory.js";
 
 export default class Bootstrapper{
 
@@ -49,7 +50,15 @@ export default class Bootstrapper{
 
         this.boot.setStatus("Loading IndexedDB");
 
+
+        const storage = await StorageFactory.create("indexedDB", {
+            dbName:"JK_OS",
+            storeName: "FileStorage",
+            version:1
+        })
+
         this.boot.addLog("IndexedDB Connected");
+        this.kernel.register("storage", storage);
 
         this.boot.setProgress(25);
 

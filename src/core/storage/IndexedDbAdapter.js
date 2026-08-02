@@ -1,6 +1,6 @@
 // IndexedDBAdapter.js
 import { StorageAdapter } from './StorageAdapter.js';
-import { openDB } from 'idb';
+import { openDB } from '../../../node_modules/idb/build/index.js';
 
 export class IndexedDBAdapter extends StorageAdapter {
   constructor(dbName = 'MiniOSDB', storeName = 'os-store', version = 1) {

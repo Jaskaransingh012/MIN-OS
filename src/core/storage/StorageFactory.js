@@ -45,7 +45,7 @@ export default class StorageFactory {
             return adapter;
 
         case 'indexedDB':
-            adapter = new IndexedDBAdapter();
+            adapter = new IndexedDBAdapter(options.dbName ,options.storeName, options.version);
             await adapter.init();
             return adapter;
 
