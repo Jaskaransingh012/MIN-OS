@@ -5,28 +5,20 @@ export default class Wallpaper {
     }
 
     mount(container) {
-        // Create a background div
+        // Elegant dark gradient background
         const bg = document.createElement('div');
-        bg.style.cssText = `
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse at 50% 40%, #1a1a2e, #0A0A0A 70%);
-            z-index: 0;
-            pointer-events: none;
-        `;
+        bg.className = 'wallpaper-bg';
         container.prepend(bg);
 
-        // Add scanline overlay
+        // Subtle scanline overlay for that premium texture
         const overlay = document.createElement('div');
         overlay.className = 'scanline-overlay';
-        overlay.style.zIndex = '1';
         container.prepend(overlay);
         this.overlay = overlay;
     }
 
     setWallpaper(colorOrGradient) {
-        // Allow dynamic wallpaper changes
-        const bg = this.overlay?.previousElementSibling;
+        const bg = this.overlay?.nextElementSibling;
         if (bg) {
             bg.style.background = colorOrGradient;
         }

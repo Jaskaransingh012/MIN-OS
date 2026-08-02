@@ -1,4 +1,4 @@
-import DesktopIcon from './DesktopIcons.js';
+import DesktopIcon from './DesktopIcon.js';
 
 export default class DesktopGrid {
 
@@ -11,11 +11,11 @@ export default class DesktopGrid {
         this.container = document.createElement('div');
         this.container.className = 'desktop-grid';
 
-        // Define icons
+        // Define icons with elegant symbols
         const iconData = [
             { label: 'Terminal', icon: '⌨' },
-            { label: 'Files', icon: '📁' },
-            { label: 'Settings', icon: '⚙' },
+            { label: 'Documents', icon: '📄' },
+            { label: 'Media', icon: '♢' },
         ];
 
         iconData.forEach(data => {
@@ -27,7 +27,7 @@ export default class DesktopGrid {
         workspace.appendChild(this.container);
     }
 
-    addIcon(label, iconSymbol, onClick) {
+    addIcon(label, iconSymbol, onClick = null) {
         const icon = new DesktopIcon(label, iconSymbol, onClick);
         icon.mount(this.container);
         this.icons.push(icon);

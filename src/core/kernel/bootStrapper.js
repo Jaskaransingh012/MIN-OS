@@ -13,8 +13,6 @@ export default class Bootstrapper{
 
     async bootSystem(){
 
-        this.boot.mount();
-
         await this.initialize();
 
         await this.loadStorage();
@@ -35,7 +33,9 @@ export default class Bootstrapper{
 
     async initialize(){
 
-        this.boot.setStatus("Initializing Kernel");
+        this.boot.mount();
+
+        this.boot.setStatus("Initializing The JK Kernel");
 
         this.boot.addLog("Kernel Started");
 

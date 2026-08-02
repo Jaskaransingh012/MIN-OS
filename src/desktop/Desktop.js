@@ -32,7 +32,7 @@ export default class Desktop {
 
         // Mount wallpaper (background)
         this.wallpaper = new Wallpaper();
-        this.wallpaper.mount(this.container);
+        this.wallpaper.mount(workspace);
 
         // Mount grid
         this.grid = new DesktopGrid();
@@ -40,29 +40,32 @@ export default class Desktop {
 
         this.container.appendChild(workspace);
 
-        // Build taskbar
-        const taskbar = document.createElement('div');
-        taskbar.className = 'taskbar';
-        taskbar.innerHTML = `
-            <div class="taskbar-left">
-                <div class="logo-small">JK <span>OS</span></div>
-                <div class="app-indicators">
-                    <span class="app-indicator active">Terminal</span>
-                    <span class="app-indicator">Files</span>
-                </div>
+        // ── Build the "Dash" (creative replacement for taskbar) ──
+        const dash = document.createElement('div');
+        dash.className = 'dash';
+        dash.innerHTML = `
+            <div class="dash-top">
+                <div class="dash-logo">JK</div>
+                <div class="dash-separator"></div>
+                <div class="dash-time" id="dash-time">00:00</div>
             </div>
-            <div class="taskbar-right">
-                <span class="status-icon">●</span>
-                <span class="divider"></span>
-                <span class="clock" id="desktop-clock">00:00:00</span>
+            <div class="dash-icons">
+                <div class="dash-icon active">⌨</div>
+                <div class="dash-icon">📁</div>
+                <div class="dash-icon">⚙</div>
+                <div class="dash-icon">♢</div>
+            </div>
+            <div class="dash-bottom">
+                <div class="dash-status"></div>
+                <div class="dash-user">Admin</div>
             </div>
         `;
-        this.container.appendChild(taskbar);
+        this.container.appendChild(dash);
 
         document.body.appendChild(this.container);
 
-        // Clock
-        this.clockElement = document.getElementById('desktop-clock');
+        // Clock in the dash
+        this.clockElement = document.getElementById('dash-time');
         this.updateClock();
         this.clockInterval = setInterval(() => this.updateClock(), 1000);
     }
@@ -73,7 +76,7 @@ export default class Desktop {
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
-        this.clockElement.innerHTML = `${hours}:${minutes}:<span class="seconds">${seconds}</span>`;
+        this.clockElement.innerHTML = `${hours}:${minutes}<span class="seconds">:${seconds}</span>`;
     }
 
     destroy() {
