@@ -1,14 +1,20 @@
 import Wallpaper from './Wallpaper.js';
 import DesktopGrid from './DesktopGrid.js';
 
+// ─── NEW imports ──────────────────────────────────────────────
+import WindowManager from '../core/window-manager/WindowManager.js';
+import WindowFactory from '../core/window-manager/WindowFactory.js';
+
 export default class Desktop {
 
-    constructor() {
+    constructor(windowManager) {
         this.container = null;
         this.wallpaper = null;
         this.grid = null;
         this.clockElement = null;
         this.clockInterval = null;
+        // ─── NEW ──────────────────────────────────────────────
+        this.windowManager = windowManager;
     }
 
     mount() {
@@ -21,22 +27,30 @@ export default class Desktop {
         workspace.className = 'desktop-workspace';
         workspace.id = 'desktop-workspace';
 
-        // Add greeting
-        const greeting = document.createElement('div');
-        greeting.className = 'greeting';
-        greeting.innerHTML = `
-            <div class="hello">Welcome to <span>JK OS</span></div>
-            <div class="sub">system ready <span class="cursor-blink"></span></div>
-        `;
-        workspace.appendChild(greeting);
+
 
         // Mount wallpaper (background)
         this.wallpaper = new Wallpaper();
-        this.wallpaper.mount(workspace);
+        this.wallpaper.mount(this.container);
+
 
         // Mount grid
         this.grid = new DesktopGrid();
         this.grid.mount(workspace);
+
+
+        // ─── NEW: Instantiate WindowManager ──────────────────
+        // It will manage windows inside this workspace
+        this.windowManager.init(workspace);
+
+        // ─── OPTIONAL: Open a few initial windows ────────────
+        // You can comment these out if you prefer to open only on icon click
+        setTimeout(() => {
+            const termWin = WindowFactory.createTerminal(this.windowManager);
+            this.windowManager.addWindow(termWin);
+            const aboutWin = WindowFactory.createAbout(this.windowManager);
+            this.windowManager.addWindow(aboutWin);
+        }, 300);
 
         this.container.appendChild(workspace);
 
@@ -50,10 +64,10 @@ export default class Desktop {
                 <div class="dash-time" id="dash-time">00:00</div>
             </div>
             <div class="dash-icons">
-                <div class="dash-icon active">⌨</div>
-                <div class="dash-icon">📁</div>
-                <div class="dash-icon">⚙</div>
-                <div class="dash-icon">♢</div>
+                <div class="dash-icon active" data-app="terminal">⌨</div>
+                <div class="dash-icon" data-app="files">📁</div>
+                <div class="dash-icon" data-app="settings">⚙</div>
+                <div class="dash-icon" data-app="about">♢</div>
             </div>
             <div class="dash-bottom">
                 <div class="dash-status"></div>
@@ -63,6 +77,32 @@ export default class Desktop {
         this.container.appendChild(dash);
 
         document.body.appendChild(this.container);
+
+        // ─── NEW: Attach click handlers to dash icons ────────
+        const icons = dash.querySelectorAll('.dash-icon');
+        icons.forEach(icon => {
+            icon.addEventListener('click', () => {
+                const app = icon.dataset.app;
+                let win = null;
+                switch (app) {
+                    case 'terminal':
+                        win = WindowFactory.createTerminal(this.windowManager);
+                        break;
+                    case 'about':
+                        win = WindowFactory.createAbout(this.windowManager);
+                        break;
+                    // Add more cases for 'files', 'settings' when you have factories
+                    default:
+                        return;
+                }
+                if (win) {
+                    this.windowManager.addWindow(win);
+                    // optional: mark active icon
+                    icons.forEach(i => i.classList.remove('active'));
+                    icon.classList.add('active');
+                }
+            });
+        });
 
         // Clock in the dash
         this.clockElement = document.getElementById('dash-time');
@@ -80,6 +120,12 @@ export default class Desktop {
     }
 
     destroy() {
+        // ─── NEW: Destroy window manager ──────────────────────
+        if (this.windowManager) {
+            this.windowManager.destroy();
+            this.windowManager = null;
+        }
+
         if (this.clockInterval) {
             clearInterval(this.clockInterval);
             this.clockInterval = null;

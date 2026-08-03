@@ -1,7 +1,9 @@
 import Desktop from "../../desktop/Desktop.js";
 import BootScreen from "../../ui/windows/bootScreen.js";
 import StorageFactory from "../storage/StorageFactory.js";
-import FileSystem from "../filesystem/FileSystem.js";
+import FileSystem from "../../filesystem/services/FileSystem.js";
+import CommandRegistry from "../../terminal/utils/commandRegistry.js";
+import WindowManager from "../window-manager/WindowManager.js";
 
 export default class Bootstrapper {
   constructor(kernel) {
@@ -15,7 +17,9 @@ export default class Bootstrapper {
     await this.loadStorage();
     await this.restoreFileSystem();   // now creates default directories
     await this.initializeCore();
-    await this.initializeDesktop();
+
+    const windowManager = await this.initializeWindowManager();
+    await this.initializeDesktop(windowManager);
     await this.initializeApplications();
     await this.restoreSession();
     await this.finish();
@@ -45,7 +49,7 @@ export default class Bootstrapper {
   async restoreFileSystem() {
     this.boot.setStatus("Restoring File System");
 
-    const storage = this.kernel.get("storage");
+    const storage = this.kernel.getService("storage");
     if (!storage) {
       throw new Error("Storage adapter not available");
     }
@@ -97,15 +101,36 @@ export default class Bootstrapper {
     await this.sleep();
   }
 
-  async initializeDesktop() {
+  async initializeShell(){
+
+    const commandRegistry = new CommandRegistry();
+    const Shell = new Terminal(this.kernel,commandRegistry);
+
+  }
+
+  async initializeDesktop(windowManager) {
     this.boot.setStatus("Loading Desktop");
-    const desktop = new Desktop();
+    const desktop = new Desktop(windowManager);
     this.kernel.register("desktop", desktop);
     this.boot.addLog("Desktop Ready");
     this.boot.setProgress(80);
     await this.sleep();
     desktop.mount();
   }
+
+  async initializeWindowManager(){
+
+    this.boot.setStatus("Loading Window Manager");
+    const windowManager = new WindowManager();
+    this.kernel.register("windowManager", windowManager);
+
+    this.boot.addLog("Window Manager Ready");
+    await this.sleep();
+
+    return windowManager;
+
+  }
+
 
   async initializeApplications() {
     this.boot.setStatus("Registering Applications");
