@@ -1,7 +1,7 @@
 // DirectoryNode.js
 import FileSystemNode from './FileSystemNode.js';
 
-export class DirectoryNode extends FileSystemNode {
+export default class DirectoryNode extends FileSystemNode {
   constructor(name, parent = null, options = {}) {
     super(name, parent, options);
     this._children = new Map(); // name → FileSystemNode
@@ -57,6 +57,10 @@ export class DirectoryNode extends FileSystemNode {
             totSize += this._children[i];
         }
         this.size = totSize;
+  }
+
+  isDirectory(){
+    return true;
   }
 
 

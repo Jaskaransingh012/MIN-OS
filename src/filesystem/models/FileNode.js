@@ -19,4 +19,8 @@ export default class FileNode extends FileSystemNode{
     }
     return 0;
   }
+
+  isDirectory(){
+    return false;
+  }
 }

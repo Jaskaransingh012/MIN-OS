@@ -22,9 +22,9 @@ export default class FileSystemNode {
         this.accessedAt = this.createdAt;
 
         this.permissions = {
-            read=true,
-            write=true,
-            execute=true,
+            read:true,
+            write:true,
+            execute:true,
             ...(options.permissions || {})
         }
 
