@@ -4,23 +4,26 @@ import DesktopGrid from './DesktopGrid.js';
 // ─── NEW imports ──────────────────────────────────────────────
 import WindowManager from '../core/window-manager/WindowManager.js';
 import WindowFactory from '../core/window-manager/WindowFactory.js';
+import Dash from '../ui/components/Dash.js';
 
 export default class Desktop {
 
-    constructor(windowManager) {
+    constructor(kernel) {
         this.container = null;
         this.wallpaper = null;
         this.grid = null;
         this.clockElement = null;
         this.clockInterval = null;
         // ─── NEW ──────────────────────────────────────────────
-        this.windowManager = windowManager;
+        this.windowManager = kernel.getService("windowManager");
+        this.appManager = kernel.getService("appManager");
     }
 
     mount() {
-        // Create main container
+
         this.container = document.createElement('div');
         this.container.id = 'desktop-screen';
+        document.body.appendChild(this.container);
 
         // Build workspace
         const workspace = document.createElement('div');
@@ -39,70 +42,22 @@ export default class Desktop {
         this.grid.mount(workspace);
 
 
-        // ─── NEW: Instantiate WindowManager ──────────────────
         // It will manage windows inside this workspace
         this.windowManager.init(workspace);
 
-        // ─── OPTIONAL: Open a few initial windows ────────────
-        // You can comment these out if you prefer to open only on icon click
-        setTimeout(() => {
-            const termWin = WindowFactory.createTerminal(this.windowManager);
-            this.windowManager.addWindow(termWin);
-            const aboutWin = WindowFactory.createAbout(this.windowManager);
-            this.windowManager.addWindow(aboutWin);
-        }, 300);
+
+
+
 
         this.container.appendChild(workspace);
 
         // ── Build the "Dash" (creative replacement for taskbar) ──
-        const dash = document.createElement('div');
-        dash.className = 'dash';
-        dash.innerHTML = `
-            <div class="dash-top">
-                <div class="dash-logo">JK</div>
-                <div class="dash-separator"></div>
-                <div class="dash-time" id="dash-time">00:00</div>
-            </div>
-            <div class="dash-icons">
-                <div class="dash-icon active" data-app="terminal">⌨</div>
-                <div class="dash-icon" data-app="files">📁</div>
-                <div class="dash-icon" data-app="settings">⚙</div>
-                <div class="dash-icon" data-app="about">♢</div>
-            </div>
-            <div class="dash-bottom">
-                <div class="dash-status"></div>
-                <div class="dash-user">Admin</div>
-            </div>
-        `;
-        this.container.appendChild(dash);
+        const dash = new Dash(this.container, this.appManager);
+        dash.mount();
 
-        document.body.appendChild(this.container);
 
         // ─── NEW: Attach click handlers to dash icons ────────
-        const icons = dash.querySelectorAll('.dash-icon');
-        icons.forEach(icon => {
-            icon.addEventListener('click', () => {
-                const app = icon.dataset.app;
-                let win = null;
-                switch (app) {
-                    case 'terminal':
-                        win = WindowFactory.createTerminal(this.windowManager);
-                        break;
-                    case 'about':
-                        win = WindowFactory.createAbout(this.windowManager);
-                        break;
-                    // Add more cases for 'files', 'settings' when you have factories
-                    default:
-                        return;
-                }
-                if (win) {
-                    this.windowManager.addWindow(win);
-                    // optional: mark active icon
-                    icons.forEach(i => i.classList.remove('active'));
-                    icon.classList.add('active');
-                }
-            });
-        });
+
 
         // Clock in the dash
         this.clockElement = document.getElementById('dash-time');

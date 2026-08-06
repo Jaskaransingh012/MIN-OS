@@ -53,8 +53,8 @@ export default class FileSystem {
     this.path = target.getAbsolutePath();
   }
 
-  async createDirectory(name, parent = null) {
-    const parentNode = parent ? this._resolvePath(parent) : this.currentFolder;
+  async createDirectory(name, parent=null) {
+    const parentNode = parent ? this._resolvePath(parent.getPath()) : this.currentFolder;
     if (!parentNode.isDirectory()) {
       throw new Error('Parent is not a directory');
     }

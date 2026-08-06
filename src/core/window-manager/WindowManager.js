@@ -1,5 +1,3 @@
-import WindowRenderer from './WindowRenderer.js';
-
 export default class WindowManager {
   constructor() {
 // DOM element where windows are placed (e.g., .desktop-workspace)

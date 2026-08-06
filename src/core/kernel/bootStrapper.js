@@ -4,6 +4,9 @@ import StorageFactory from "../storage/StorageFactory.js";
 import FileSystem from "../../filesystem/services/FileSystem.js";
 import CommandRegistry from "../../terminal/utils/commandRegistry.js";
 import WindowManager from "../window-manager/WindowManager.js";
+import AppRegistry from "../app-manager/AppRegistry.js";
+import AppManager from "../app-manager/AppManager.js";
+import Shell from "../../terminal/shell/Shell.js";
 
 export default class Bootstrapper {
   constructor(kernel) {
@@ -16,11 +19,15 @@ export default class Bootstrapper {
     await this.initialize();
     await this.loadStorage();
     await this.restoreFileSystem();   // now creates default directories
-    await this.initializeCore();
 
-    const windowManager = await this.initializeWindowManager();
-    await this.initializeDesktop(windowManager);
+
+    await this.initializeWindowManager();
     await this.initializeApplications();
+    await this.initializeDesktop();
+
+    await this.initializeShell();
+
+
     await this.restoreSession();
     await this.finish();
   }
@@ -92,25 +99,24 @@ export default class Bootstrapper {
     await this.sleep();
   }
 
-  async initializeCore() {
-    this.boot.setStatus("Starting Core Services");
-    this.boot.addLog("Window Manager");
-    this.boot.addLog("Process Manager");
-    this.boot.addLog("App Manager");
-    this.boot.setProgress(60);
-    await this.sleep();
-  }
+
 
   async initializeShell(){
 
     const commandRegistry = new CommandRegistry();
-    const Shell = new Terminal(this.kernel,commandRegistry);
+    this.kernel.register("commandRegistry", commandRegistry);
+
+    const shell = new Shell(this.kernel);
+    await shell.init();
+    this.kernel.register("shell", shell);
 
   }
 
-  async initializeDesktop(windowManager) {
+  async initializeDesktop() {
     this.boot.setStatus("Loading Desktop");
-    const desktop = new Desktop(windowManager);
+    const windowManager = this.kernel.getService("windowManager");
+    const appManager = this.kernel.getService("appManager");
+    const desktop = new Desktop(this.kernel);
     this.kernel.register("desktop", desktop);
     this.boot.addLog("Desktop Ready");
     this.boot.setProgress(80);
@@ -133,12 +139,34 @@ export default class Bootstrapper {
 
 
   async initializeApplications() {
-    this.boot.setStatus("Registering Applications");
-    this.boot.addLog("Terminal");
-    this.boot.addLog("Browser");
-    this.boot.addLog("File Explorer");
+
+    this.boot.setStatus("Loading AppRegistry");
+    const appRegistry = new AppRegistry();
+    this.kernel.register("appRegistry", appRegistry);
+
+    this.boot.addLog("Loaded AppRegistry");
+
+    const windowManager = this.kernel.getService("windowManager")
+    console.log("this kernel in intialize app", this.kernel);
+    const appManager = new AppManager(this.kernel);
+
+    this.kernel.register("appManager", appManager);
+
+    this.boot.addLog("App Manager Loaded");
+
+
+    await this.loadApps();
+
     this.boot.setProgress(95);
     await this.sleep();
+  }
+
+
+  async loadApps(){
+
+    const AppManager = this.kernel.getService("appManager");
+    await AppManager.loadApps();
+
   }
 
   async restoreSession() {

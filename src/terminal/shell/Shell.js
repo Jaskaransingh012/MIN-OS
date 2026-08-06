@@ -1,13 +1,21 @@
+import CdCommand from "../commads/cd.js";
+import LsCommand from "../commads/ls.js";
+import MkdirCommand from "../commads/mkdir.js";
+
 export default class Shell{
 
-    constructor(kernel, commandRegistry){
+    constructor(kernel){
         this.kernel = kernel;
-        this.commandRegistry = commandRegistry;
+        this.commandRegistry = kernel.getService("commandRegistry");
     }
 
     async init(){
 
-        
+        this.commandRegistry.register("ls",new LsCommand(this.kernel));
+        this.commandRegistry.register("cd",new CdCommand(this.kernel));
+        this.commandRegistry.register("mkdir", new MkdirCommand(this.kernel));
+
+
 
     }
 
@@ -21,14 +29,20 @@ export default class Shell{
 
         const entry = this.commandRegistry.get(cmd);
 
+
+
         if(!entry){
 
             this.output(`Command Not Found: ${cmd}`);
             return;
         }
 
-        entry.execute(this.kernel ,args);
+        const output = entry._execute(args);
+        return output;
 
     }
+
+
+
 
 }

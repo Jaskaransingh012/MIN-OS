@@ -29,4 +29,8 @@ export default class Kernel{
 
     }
 
+    listOfServices(){
+        return this.container.listService();
+    }
+
 }

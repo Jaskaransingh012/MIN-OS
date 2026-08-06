@@ -26,4 +26,6 @@ export default class ServiceContainer {
   clear() {
     this.services.clear();
   }
+
+  listService() {return this.services;}
 }

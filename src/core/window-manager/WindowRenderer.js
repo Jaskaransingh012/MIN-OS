@@ -1,5 +1,6 @@
 export default class WindowRenderer {
   static render(state, contentElement) {
+    console.log("state",state);
     const wrapper = document.createElement("div");
 
     wrapper.className =
@@ -20,10 +21,17 @@ export default class WindowRenderer {
       <div class="flex items-center gap-1.5">
         <button class="window-btn-minimize w-3 h-3 rounded-full bg-amber-500/20 hover:bg-amber-500/40 transition-colors" title="Minimize"></button>
         <button class="window-btn-maximize w-3 h-3 rounded-full bg-amber-500/20 hover:bg-amber-500/40 transition-colors" title="Maximize"></button>
-        <button class="window-btn-close w-3 h-3 rounded-full bg-red-500/30 hover:bg-red-500/60 transition-colors" title="Close"></button>
+        <button class="window-btn-close w-3 h-3 rounded-full bg-red-800 hover:bg-red-500/60 transition-colors" title="Close"></button>
       </div>
     `;
     wrapper.appendChild(titleBar);
+
+    /**
+     * The content of any window will be available int this content..
+     */
+
+
+
 
     const content = document.createElement("div");
     content.className = "window-content flex-1 overflow-auto p-2 text-gray-300";

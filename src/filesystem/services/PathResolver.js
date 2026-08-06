@@ -4,6 +4,7 @@ export default class pathResolver {
    * e.g. "/foo/bar/" → ["foo", "bar"]
    */
   static splitPath(path) {
+    console.log("path in split path", path)
     if (!path || path === '/') return [];
     return path.split('/').filter(part => part.length > 0);
   }

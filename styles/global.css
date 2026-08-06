@@ -26,13 +26,14 @@ body{
 }
 
 button{
+    
 
     border:none;
     outline:none;
 
     cursor:pointer;
 
-    background:none;
+    /* background:none; */
 }
 
 input,
