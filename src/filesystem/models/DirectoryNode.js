@@ -25,7 +25,7 @@ export default class DirectoryNode extends FileSystemNode {
 
   getChild(name) {
     return this._children.get(name) || null;
-  }
+  } 
 
   hasChild(name) {
     return this._children.has(name);

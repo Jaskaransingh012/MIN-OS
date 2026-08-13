@@ -51,7 +51,10 @@ export default class TerminalApp extends BaseApp {
       const pathEl = document.getElementById("jk-path");
       const fileSystem = kernel.getService("fileSystem");
       const path  = fileSystem.path;
-      pathEl.innerText = path;
+      if(pathEl != null){
+
+        pathEl.innerText = path;
+      }
     }
     input.addEventListener('keydown', async (event)=> {
       if(event.key=='Enter'){

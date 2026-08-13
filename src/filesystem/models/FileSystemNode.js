@@ -1,3 +1,5 @@
+import FileNode from "./FileNode.js";
+
 export default class FileSystemNode {
 
     static _nextId = 0;

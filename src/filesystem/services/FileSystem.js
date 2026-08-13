@@ -70,7 +70,7 @@ export default class FileSystem {
   }
 
   async createFile(name, content = '', options = {}, parent = null) {
-    const parentNode = parent ? this._resolvePath(parent) : this.currentFolder;
+    const parentNode = parent ? this._resolvePath(parent.getPath()) : this.currentFolder;
     if (!parentNode.isDirectory()) {
       throw new Error('Parent is not a directory');
     }
