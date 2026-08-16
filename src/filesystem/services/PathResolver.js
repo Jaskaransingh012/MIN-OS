@@ -4,9 +4,9 @@ export default class pathResolver {
    * e.g. "/foo/bar/" → ["foo", "bar"]
    */
   static splitPath(path) {
-    console.log("path in split path", path)
-    if (!path || path === '/') return [];
-    return path.split('/').filter(part => part.length > 0);
+    console.log("path in split path", path);
+    if (!path || path === "/") return [];
+    return path.split("/").filter((part) => part.length > 0);
   }
 
   /**
@@ -16,16 +16,18 @@ export default class pathResolver {
     if (!path) return currentFolder;
 
     const parts = this.splitPath(path);
-    let node = path.startsWith('/') ? root : currentFolder;
+    let node = path.startsWith("/") ? root : currentFolder;
 
     for (const part of parts) {
-      if (part === '..') {
+      if (part === "..") {
         if (node.parent) node = node.parent;
         continue;
       }
-      if (part === '.') continue;
+      if (part === ".") continue;
       if (!node.isDirectory()) {
-        throw new Error(`Cannot traverse: ${node.getAbsolutePath()} is not a directory`);
+        throw new Error(
+          `Cannot traverse: ${node.getAbsolutePath()} is not a directory`,
+        );
       }
       const child = node.getChild(part);
       if (!child) {
@@ -37,15 +39,24 @@ export default class pathResolver {
   }
 
   static getParentPath(path) {
-    if (path === '/') return '/';
+    if (path === "/") return "/";
+
+    const isAbsolute = path.startsWith("/");
     const parts = this.splitPath(path);
-    if (parts.length === 0) return '/';
+
+    if (parts.length === 0) return "/";
+
     parts.pop();
-    return '/' + parts.join('/');
+
+    if (parts.length === 0) {
+      return isAbsolute ? "/" : ".";
+    }
+
+    return (isAbsolute ? "/" : "") + parts.join("/");
   }
 
   static getBaseName(path) {
     const parts = this.splitPath(path);
-    return parts.length === 0 ? '' : parts[parts.length - 1];
+    return parts.length === 0 ? "" : parts[parts.length - 1];
   }
 }

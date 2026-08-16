@@ -166,31 +166,45 @@ export default class FileSystem {
     await this._save();
   }
 
-  async copyFile(sourcePath, destPath) {
+async copyFile(sourcePath, destPath) {
     const sourceNode = this._resolvePath(sourcePath);
+
     if (!sourceNode.isFile()) {
-      throw new Error(`Source is not a file: ${sourcePath}`);
+        throw new Error(`Source is not a file: ${sourcePath}`);
     }
-    const destParts = pathResolver.splitPath(destPath);
-    const destName = destParts.pop();
-    const destDirPath = destParts.length === 0 ? '/' : '/' + destParts.join('/');
+
+    const destName = pathResolver.getBaseName(destPath);
+
+    if (!destName) {
+        throw new Error(`Invalid destination: ${destPath}`);
+    }
+
+    const destDirPath = pathResolver.getParentPath(destPath);
+
     const destParent = this._resolvePath(destDirPath);
+
     if (!destParent.isDirectory()) {
-      throw new Error(`Destination parent is not a directory: ${destDirPath}`);
+        throw new Error(
+            `Destination parent is not a directory: ${destDirPath}`
+        );
     }
+
     if (destParent.hasChild(destName)) {
-      throw new Error(`Destination already exists: ${destPath}`);
+        throw new Error(`Destination already exists: ${destPath}`);
     }
+
     const newFile = new FileNode(destName, destParent, {
-      content: sourceNode.content,
-      mimeType: sourceNode.mimeType,
-      extension: sourceNode.extension,
-      permissions: { ...sourceNode.permissions },
-      metaData: { ...sourceNode.metaData }
+        content: sourceNode.content,
+        mimeType: sourceNode.mimeType,
+        extension: sourceNode.extension,
+        permissions: { ...sourceNode.permissions },
+        metaData: { ...sourceNode.metaData }
     });
+
     destParent.addChild(newFile);
+
     await this._save();
-  }
+}
 
   async stat(path) {
     const node = this._resolvePath(path);

@@ -1,4 +1,7 @@
+import CatCommand from "../commads/cat.js";
 import CdCommand from "../commads/cd.js";
+import ClearCommand from "../commads/clear.js";
+import CopyCommand from "../commads/cp.js";
 import EchoCommand from "../commads/echo.js";
 import LsCommand from "../commads/ls.js";
 import MkdirCommand from "../commads/mkdir.js";
@@ -20,7 +23,9 @@ export default class Shell{
         this.commandRegistry.register("touch", new TouchCommand(this.kernel));
         this.commandRegistry.register("echo", new EchoCommand(this.kernel));
         this.commandRegistry.register("vim", new VimEditorCommand(this.kernel));
-
+        this.commandRegistry.register("cat", new CatCommand(this.kernel));
+        this.commandRegistry.register("clear", new ClearCommand());
+        this.commandRegistry.register("cp", new CopyCommand(this.kernel));
 
 
 

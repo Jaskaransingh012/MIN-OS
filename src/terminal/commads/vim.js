@@ -12,7 +12,7 @@ export default class VimEditorCommand {
       const fileName = args[0];
       if (!fileName) throw new Error("No file name provided");
       this.filePath = this.fileSystem.path + "/" + fileName;
-      console.log("filePath", this.filePath)
+
 
       const fileInstance =
         this.fileSystem.currentFolder._children.get(fileName);
@@ -20,7 +20,6 @@ export default class VimEditorCommand {
 
       // Read file content (assume fileInstance.content is a string)
       const content = fileInstance.content || "";
-      console.log("conente in the file", content)
 
       this.state = {
         content: content,

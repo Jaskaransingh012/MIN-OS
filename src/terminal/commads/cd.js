@@ -2,16 +2,20 @@ export default class CdCommand{
 
     constructor(kernel){
 
-        this.kernel = kernel;
-        this.fileSystem = this.kernel.getService("fileSystem");
+        this.fileSystem = kernel.getService("fileSystem");
 
     }
 
     async _execute(args){
+        try{
+            console.log("arguments",args);
+            await this.fileSystem.changeDirectory(args[0]);
+            return "Changed Directory to " + this.fileSystem.currentFolder.name!=''?this.fileSystem.currentFolder.name : "Root";
+        }
+        catch{
+            return "Can not change directory to " + args[0];
+        }
 
-        console.log("arguments",args);
-        this.fileSystem.changeDirectory(args[0]);
-        return "Changed Directory to " + this.fileSystem.currentFolder.name!=''?this.fileSystem.currentFolder.name : "Root";
     }
 
 }
