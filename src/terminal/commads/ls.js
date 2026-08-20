@@ -9,8 +9,13 @@ export default class LsCommand{
 
     async _execute(args){
 
-        return Array.from(this.fileSystem.currentFolder._children.values(), obj => obj.name).join(" ");
+        let childrens;
+        if(args.length ==0){
+            childrens = await this.fileSystem.getChildren(this.fileSystem.path);
+        }
+        const names = await Array.from(childrens, obj => obj.name).join(" ");
 
+        return names;
 
     }
 

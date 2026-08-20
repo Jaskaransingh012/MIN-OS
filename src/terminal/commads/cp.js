@@ -1,24 +1,19 @@
-export default class CopyCommand{
+export default class CopyCommand {
+  constructor(kernel) {
+    this.fileSystem = kernel.getService("fileSystem");
+  }
 
-    constructor(kernel){
+  async _execute(args) {
+    try {
+      if (args.length < 2) {
+        throw new Error("Require copy source as well as destination");
+      }
 
-        this.fileSystem = kernel.getService("fileSystem");
+      await this.fileSystem.copyFile(args[0], args[1]);
 
+      return `File successfully copied to ${args[1]}`;
+    } catch (error) {
+      return error.message;
     }
-
-    async _execute(args){
-        try{
-            if(args.length<2) throw new Error("Require copy source as well as the destination source")
-
-            const currentPath = this.fileSystem.path;
-            const sourceFilePath = currentPath + '/' + args[0];
-            const copyFile = await this.fileSystem.copyFile(sourceFilePath, args[1]);
-            return "File successfully copied at destination" + args[1];
-        }
-        catch(error){
-            return error.message;
-        }
-
-    }
-
+  }
 }

@@ -2,8 +2,9 @@ import DesktopIcon from './DesktopIcon.js';
 
 export default class DesktopGrid {
 
-    constructor() {
+    constructor(kernel) {
         this.container = null;
+        this.fileSystem = kernel.getService("fileSystem");
         this.icons = [];
     }
 
@@ -12,11 +13,30 @@ export default class DesktopGrid {
         this.container.className = 'desktop-grid';
 
         // Define icons with elegant symbols
-        const iconData = [
-            { label: 'Terminal', icon: '⌨' },
-            { label: 'Documents', icon: '📄' },
-            { label: 'Media', icon: '♢' },
-        ];
+
+
+        /***
+         Finding all the files and folders inside the desktop
+
+
+
+         */
+
+        const results = this.fileSystem.getChildren("/Desktop");
+        console.log("results in desktop", results);
+
+        const iconData = [];
+
+        for(let i = 0; i<results.length; i++){
+            const currenthChildren = results[i];
+
+            iconData.push({
+                label: currenthChildren.name,
+                icon: currenthChildren.isDirectory() ? '📁' : '🗄️',
+            })
+
+        }
+
 
         iconData.forEach(data => {
             const icon = new DesktopIcon(data.label, data.icon);
