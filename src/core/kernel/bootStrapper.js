@@ -183,7 +183,7 @@ export default class Bootstrapper {
     await this.boot.destroy();
   }
 
-  sleep(ms = 0) {
+  sleep(ms = 500) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
