@@ -1,4 +1,5 @@
 import FileNode from "./FileNode.js";
+// import DirectoryNode from "./DirectoryNode.js";
 
 export default class FileSystemNode {
 
@@ -70,9 +71,6 @@ export default class FileSystemNode {
      /**
    * Check if this node is a directory.
    */
-    isDirectory() {
-        return this instanceof DirectoryNode;
-    }
 
     /**
      * Check if this node is a file.

@@ -26,7 +26,7 @@ body{
 }
 
 button{
-    
+
 
     border:none;
     outline:none;
@@ -103,3 +103,5 @@ a{
 
     border-radius:var(--radius-md);
 }
+
+

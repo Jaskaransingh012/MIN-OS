@@ -39,20 +39,9 @@ export default class WindowFactory {
       ...windowStateOverrides,
     });
 
-    console.log("content", content);
 
     const win = new Window(state, content);
-    // Set callbacks (can be overridden later)
-    win.onClose = () => {};
-    win.onFocus = () => {};
-    win.onMaximize = () => {
-      // default maximize toggle handled in Window, but we can override
-    };
-    if (windowManager) {
-      // Optionally add to manager, but we'll let the caller add it.
-      // Actually, we might want to return the window and let AppManager add it.
-      // So we don't auto-add here.
-    }
+
     return win;
   }
 }

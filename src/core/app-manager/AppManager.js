@@ -1,6 +1,7 @@
-import AppRegistry from './AppRegistry.js';
-import WindowFactory from '../window-manager/WindowFactory.js'; // adjust path
-import TerminalApp from '../../applications/TerminalApp.js';
+import AppRegistry from "./AppRegistry.js";
+import WindowFactory from "../window-manager/WindowFactory.js"; // adjust path
+import TerminalApp from "../../applications/TerminalApp.js";
+import FileManagerApp from "../../applications/FileManagerApp.js";
 
 /**
  * Manages running app instances, window creation, and lifecycle.
@@ -12,8 +13,8 @@ export default class AppManager {
    */
   constructor(kernel) {
     this.kernel = kernel;
-    this.windowManager = kernel.getService('windowManager');
-    this.registry = kernel.getService('appRegistry');
+    this.windowManager = kernel.getService("windowManager");
+    this.registry = kernel.getService("appRegistry");
     this._instances = new Map(); // instanceId -> { app, window }
     this._appIdToInstances = new Map(); // appId -> Set of instanceIds
   }
@@ -43,7 +44,7 @@ export default class AppManager {
     const { appClass, defaultConfig } = def;
     const config = { ...defaultConfig, ...appConfig };
     const id = `${appId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    console.log("def in open app", def)
+    console.log("def in open app", def);
     const app = new appClass(defaultConfig, this.kernel);
 
     // Create content
@@ -54,11 +55,9 @@ export default class AppManager {
       app.getTitle(),
       content,
       this.windowManager,
-      { ...windowConfig, zIndex: this.windowManager._getNextZIndex() }
+      { ...windowConfig, zIndex: this.windowManager._getNextZIndex() },
     );
 
-
-    console.log("window",win.contentElement);
 
     // Store relationship
     app.window = win;
@@ -77,10 +76,6 @@ export default class AppManager {
     win.onFocus = (w) => {
       app.onFocus();
       // focus manager handles z-index
-    };
-    win.onMaximize = (w) => {
-      // default behavior: toggle maximize (handled in Window)
-      // We can add custom logic here if needed.
     };
 
     // Add window to manager
@@ -110,7 +105,7 @@ export default class AppManager {
     app.destroy();
     this._instances.delete(instanceId);
     // Remove from appId map
-    const appId = app.id.split('-')[0]; // hacky, but we can store appId in app
+    const appId = app.id.split("-")[0]; // hacky, but we can store appId in app
     const set = this._appIdToInstances.get(appId);
     if (set) {
       set.delete(instanceId);
@@ -173,10 +168,14 @@ export default class AppManager {
     this._appIdToInstances.clear();
   }
 
-  async loadApps(){
-    this.registry.register('terminal', TerminalApp, {
-      title: 'Terminal',
-      icon: '⌨'
-    })
+  async loadApps() {
+    this.registry.register("terminal", TerminalApp, {
+      title: "Terminal",
+      icon: "⌨",
+    });
+    this.registry.register("file-manager", FileManagerApp, {
+      title: "File Manager",
+      icon: "💻",
+    });
   }
 }

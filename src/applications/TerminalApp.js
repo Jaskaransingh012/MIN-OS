@@ -8,7 +8,6 @@ export default class TerminalApp extends BaseApp {
 
 
   createContent() {
-    console.log("services available ",this.kernel.listOfServices());
 
     const container = document.createElement('div');
     container.className = 'jk-terminal';

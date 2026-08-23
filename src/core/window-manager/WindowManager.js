@@ -39,6 +39,7 @@ export default class WindowManager {
       window.update();
     }
     return window;
+
   }
 
   // Remove a window
@@ -66,6 +67,7 @@ export default class WindowManager {
     window.update();
     this.activeWindow = window;
     // Update other windows (optional: keep them behind)
+
   }
 
   // Get next z-index

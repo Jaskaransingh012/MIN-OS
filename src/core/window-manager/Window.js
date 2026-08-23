@@ -1,7 +1,8 @@
-import WindowRenderer from './WindowRenderer.js';
+import WindowRenderer from "./WindowRenderer.js";
 
 export default class Window {
   constructor(state, contentElement) {
+    console.log("state in the current window", state);
     this.state = state;
     this.contentElement = contentElement;
     this.dom = null; // the wrapper element
@@ -45,74 +46,122 @@ export default class Window {
 
   // Toggle minimize
   toggleMinimize() {
+    console.log("run minimized");
     this.state.minimized = !this.state.minimized;
     this.update();
   }
 
   // Toggle maximize (store previous geometry)
   toggleMaximize() {
+    console.log("this state in toggle max", this.state);
+
     if (this.state.maximized) {
-      // Restore from saved state
+      // Restore previous geometry
       if (this._maximizedState) {
         Object.assign(this.state, this._maximizedState);
         this._maximizedState = null;
-        this.state.maximized = false;
       }
+
+      this.state.maximized = false;
     } else {
-      // Save current geometry and maximize
-      this._maximizedState = { x: this.state.x, y: this.state.y, width: this.state.width, height: this.state.height };
-      // Use container size (will be set by manager)
-      // We'll let the manager set the size when calling maximize
+      // Save current geometry
+      this._maximizedState = {
+        x: this.state.x,
+        y: this.state.y,
+        width: this.state.width,
+        height: this.state.height,
+      };
+
+      // Maximize geometry
+      const parent = this.dom.parentNode;
+      const parentRect = parent.getBoundingClientRect();
+
+      this.state.x = 0;
+      this.state.y = 0;
+      this.state.width = parentRect.width;
+      this.state.height = parentRect.height;
+
+      this.state.maximized = true;
     }
-    this.state.maximized = !this.state.maximized;
+
     this.update();
   }
 
   // ----- internal events -----
   _bindEvents() {
     if (!this.dom) return;
-    const titleBar = this.dom.querySelector('.title-bar');
-    const resizeHandle = this.dom.querySelector('.resize-handle');
-    const closeBtn = this.dom.querySelector('.window-btn-close');
-    const minBtn = this.dom.querySelector('.window-btn-minimize');
-    const maxBtn = this.dom.querySelector('.window-btn-maximize');
+    const titleBar = this.dom.querySelector(".title-bar");
+    const resizeHandle = this.dom.querySelector(".resize-handle");
+    const closeBtn = this.dom.querySelector(".window-btn-close");
+    const minBtn = this.dom.querySelector(".window-btn-minimize");
+    const maxBtn = this.dom.querySelector(".window-btn-maximize");
 
     // Focus on click (anywhere on window)
     const focusHandler = (e) => {
       if (this.onFocus) this.onFocus(this);
     };
-    this.dom.addEventListener('mousedown', focusHandler);
-    this._boundEvents.push({ target: this.dom, event: 'mousedown', handler: focusHandler });
+    this.dom.addEventListener("mousedown", focusHandler);
+    this._boundEvents.push({
+      target: this.dom,
+      event: "mousedown",
+      handler: focusHandler,
+    });
 
     // Drag on title bar
     const dragStartHandler = (e) => {
       if (e.button !== 0) return;
-      if (e.target.closest('button')) return; // don't drag on buttons
+      if (e.target.closest("button")) return; // don't drag on buttons
       this._startDrag(e);
     };
-    titleBar.addEventListener('mousedown', dragStartHandler);
-    this._boundEvents.push({ target: titleBar, event: 'mousedown', handler: dragStartHandler });
+    titleBar.addEventListener("mousedown", dragStartHandler);
+    this._boundEvents.push({
+      target: titleBar,
+      event: "mousedown",
+      handler: dragStartHandler,
+    });
 
     // Resize
     const resizeStartHandler = (e) => {
       if (e.button !== 0) return;
       this._startResize(e);
     };
-    resizeHandle.addEventListener('mousedown', resizeStartHandler);
-    this._boundEvents.push({ target: resizeHandle, event: 'mousedown', handler: resizeStartHandler });
-
+    resizeHandle.addEventListener("mousedown", resizeStartHandler);
+    this._boundEvents.push({
+      target: resizeHandle,
+      event: "mousedown",
+      handler: resizeStartHandler,
+    });
+    console.log("state before maximize", this.state);
     // Buttons
-    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); if (this.onClose) this.onClose(this); });
-    minBtn.addEventListener('click', (e) => { e.stopPropagation(); this.toggleMinimize(); });
-    maxBtn.addEventListener('click', (e) => { e.stopPropagation(); if (this.onMaximize) this.onMaximize(this); });
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.onClose) this.onClose(this);
+    });
+    minBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleMinimize();
+    });
+
+    maxBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleMaximize();
+    });
 
     // Global mouse move / up for drag & resize
     this._moveHandler = (e) => this._handleMove(e);
     this._upHandler = (e) => this._handleUp(e);
-    document.addEventListener('mousemove', this._moveHandler);
-    document.addEventListener('mouseup', this._upHandler);
-    this._boundEvents.push({ target: document, event: 'mousemove', handler: this._moveHandler });
-    this._boundEvents.push({ target: document, event: 'mouseup', handler: this._upHandler });
+    document.addEventListener("mousemove", this._moveHandler);
+    document.addEventListener("mouseup", this._upHandler);
+    this._boundEvents.push({
+      target: document,
+      event: "mousemove",
+      handler: this._moveHandler,
+    });
+    this._boundEvents.push({
+      target: document,
+      event: "mouseup",
+      handler: this._upHandler,
+    });
   }
 
   _unbindEvents() {
@@ -120,8 +169,10 @@ export default class Window {
       target.removeEventListener(event, handler);
     }
     this._boundEvents = [];
-    if (this._moveHandler) document.removeEventListener('mousemove', this._moveHandler);
-    if (this._upHandler) document.removeEventListener('mouseup', this._upHandler);
+    if (this._moveHandler)
+      document.removeEventListener("mousemove", this._moveHandler);
+    if (this._upHandler)
+      document.removeEventListener("mouseup", this._upHandler);
   }
 
   _startDrag(e) {
@@ -130,7 +181,7 @@ export default class Window {
     const rect = this.dom.getBoundingClientRect();
     this._dragOffset.x = e.clientX - rect.left;
     this._dragOffset.y = e.clientY - rect.top;
-    this.dom.style.cursor = 'grabbing';
+    this.dom.style.cursor = "grabbing";
   }
 
   _startResize(e) {
@@ -140,7 +191,7 @@ export default class Window {
     this._resizeStart.y = e.clientY;
     this._resizeStart.w = this.state.width;
     this._resizeStart.h = this.state.height;
-    this.dom.style.cursor = 'se-resize';
+    this.dom.style.cursor = "se-resize";
   }
 
   _handleMove(e) {
@@ -175,11 +226,11 @@ export default class Window {
   _handleUp(e) {
     if (this._isDragging) {
       this._isDragging = false;
-      this.dom.style.cursor = '';
+      this.dom.style.cursor = "";
     }
     if (this._isResizing) {
       this._isResizing = false;
-      this.dom.style.cursor = '';
+      this.dom.style.cursor = "";
     }
   }
 }

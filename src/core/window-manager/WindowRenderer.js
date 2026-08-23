@@ -1,4 +1,5 @@
 export default class WindowRenderer {
+
   static render(state, contentElement) {
     console.log("state",state);
     const wrapper = document.createElement("div");
@@ -75,4 +76,6 @@ export default class WindowRenderer {
       wrapper.style.display = "flex";
     }
   }
+
+
 }

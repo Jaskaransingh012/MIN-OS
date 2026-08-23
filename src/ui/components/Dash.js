@@ -19,7 +19,7 @@ export default class Dash{
             </div>
             <div class="dash-icons">
                 <div class="dash-icon active" data-app="terminal">⌨</div>
-                <div class="dash-icon" data-app="files">📁</div>
+                <div class="dash-icon" data-app="file-manager">💻</div>
                 <div class="dash-icon" data-app="settings">⚙</div>
                 <div class="dash-icon" data-app="about">♢</div>
             </div>
@@ -45,6 +45,10 @@ export default class Dash{
                         break;
                     case 'about':
                         win = WindowFactory.createAbout(this.windowManager);
+                        break;
+                    case 'file-manager':
+                        this.appManager.openApp('file-manager',{},{}, true);
+
                         break;
                     // Add more cases for 'files', 'settings' when you have factories
                     default:

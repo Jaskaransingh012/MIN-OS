@@ -307,6 +307,6 @@ export default class FileSystem {
     if (!target.isDirectory()) {
       throw new Error(`Not a directory: ${path}`);
     }
-    return Array.from(target._children.values());
+    return target.listChildren();
   }
 }
