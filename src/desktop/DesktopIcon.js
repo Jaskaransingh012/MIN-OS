@@ -1,10 +1,10 @@
 export default class DesktopIcon {
 
-    constructor(label, iconSymbol, onClick = null) {
+    constructor(label, iconSymbol, appManager=null) {
         this.label = label;
         this.iconSymbol = iconSymbol;
-        this.onClick = onClick;
         this.element = null;
+        this.appManager = appManager;
     }
 
     mount(container) {
@@ -14,10 +14,12 @@ export default class DesktopIcon {
             <div class="icon">${this.iconSymbol}</div>
             <div class="label">${this.label}</div>
         `;
-        if (this.onClick) {
-            this.element.style.cursor = 'pointer';
-            this.element.addEventListener('click', this.onClick);
-        }
+        this.element.style.cursor = 'pointer';
+        this.element.addEventListener('click', ()=> {
+            console.log("clicked")
+            this.appManager.openApp('file-manager',{},{}, true);
+        });
+
         container.appendChild(this.element);
         return this.element;
     }

@@ -6,6 +6,8 @@ export default class DesktopGrid {
         this.container = null;
         this.fileSystem = kernel.getService("fileSystem");
         this.icons = [];
+        this.appManager = kernel.getService("appManager");
+        console.log("appmanager", this.appManager)
     }
 
     mount(workspace) {
@@ -39,7 +41,12 @@ export default class DesktopGrid {
 
 
         iconData.forEach(data => {
-            const icon = new DesktopIcon(data.label, data.icon);
+            let icon;
+            if(data.icon == '📁'){
+                 icon = new DesktopIcon(data.label, data.icon, this.appManager);
+            }else{
+                icon = new DesktopIcon(data.label, data.icon);
+            }
             icon.mount(this.container);
             this.icons.push(icon);
         });
@@ -53,4 +60,7 @@ export default class DesktopGrid {
         this.icons.push(icon);
         return icon;
     }
+
+
+    fileOnClick(){}
 }

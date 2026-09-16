@@ -1,0 +1,150 @@
+/* ── Text Editor Styles ── */
+.jk-text-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #1e1e1e;
+  color: #e0e0e0;
+  font-family: "Monaco", "Courier New", monospace;
+  font-size: 14px;
+}
+
+.jk-editor-menu-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #252526;
+  border-bottom: 1px solid #3e3e42;
+  flex-wrap: wrap;
+}
+
+.jk-menu-group {
+  display: flex;
+  gap: 4px;
+}
+
+.jk-menu-btn {
+  padding: 4px 12px;
+  background: #3c3c3c;
+  color: #e0e0e0;
+  border: 1px solid #555555;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.jk-menu-btn:hover {
+  background: #505050;
+}
+
+.jk-menu-btn:active {
+  background: #3c3c3c;
+}
+
+.jk-editor-title {
+  margin-left: auto;
+  font-weight: bold;
+  color: #888;
+  font-size: 13px;
+}
+
+.jk-editor-status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: #007acc;
+  border-top: 1px solid #0e639c;
+  font-size: 12px;
+  color: #fff;
+}
+
+.jk-editor-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.jk-editor-line-numbers {
+  width: 50px;
+  padding: 8px 4px;
+  background: #1e1e1e;
+  border-right: 1px solid #3e3e42;
+  overflow: hidden;
+  text-align: right;
+  color: #858585;
+  user-select: none;
+}
+
+.jk-line-number {
+  height: 20px;
+  line-height: 20px;
+  font-size: 12px;
+}
+
+.jk-editor-textarea {
+  flex: 1;
+  padding: 8px 12px;
+  background: #1e1e1e;
+  color: #e0e0e0;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 20px;
+  tab-size: 2;
+  overflow-y: auto;
+}
+
+.jk-editor-find-panel {
+  background: #252526;
+  border-top: 1px solid #3e3e42;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jk-find-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.jk-find-input {
+  flex: 1;
+  padding: 6px 8px;
+  background: #3c3c3c;
+  color: #e0e0e0;
+  border: 1px solid #555555;
+  border-radius: 3px;
+  font-size: 12px;
+  outline: none;
+}
+
+.jk-find-input:focus {
+  border-color: #007acc;
+  box-shadow: 0 0 3px #007acc;
+}
+
+.jk-find-btn {
+  padding: 4px 10px;
+  background: #3c3c3c;
+  color: #e0e0e0;
+  border: 1px solid #555555;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.jk-find-btn:hover {
+  background: #505050;
+}
+
+.jk-hidden {
+  display: none !important;
+}

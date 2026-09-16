@@ -2,6 +2,7 @@ import AppRegistry from "./AppRegistry.js";
 import WindowFactory from "../window-manager/WindowFactory.js"; // adjust path
 import TerminalApp from "../../applications/TerminalApp.js";
 import FileManagerApp from "../../applications/FileManagerApp.js";
+import TextEditorApp from "../../applications/TextEditorApp.js";
 
 /**
  * Manages running app instances, window creation, and lifecycle.
@@ -46,6 +47,7 @@ export default class AppManager {
     const id = `${appId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     console.log("def in open app", def);
     const app = new appClass(defaultConfig, this.kernel);
+
 
     // Create content
     const content = app.createContent();
@@ -177,5 +179,9 @@ export default class AppManager {
       title: "File Manager",
       icon: "💻",
     });
+    this.registry.register("text-editor", TextEditorApp, {
+    title: "Text Editor",
+    icon: "📝",
+  });
   }
 }

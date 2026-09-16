@@ -3,6 +3,7 @@ import DirectoryNode from "../models/DirectoryNode.js";
 import FileNode from "../models/FileNode.js";
 import pathResolver from "./PathResolver.js";
 import FileTypeRegistry from "./FileTypeRegistery.js";
+import FileTrie from "../constants/FileTrie.js";
 
 export default class FileSystem {
   constructor(storageAdapter) {
@@ -12,6 +13,8 @@ export default class FileSystem {
     this.currentFolder = null;
     this.path = "/";
     this.fileTypeRegistry = new FileTypeRegistry();
+
+    this.fileTrie = new FileTrie();
   }
 
   /**
@@ -309,4 +312,24 @@ export default class FileSystem {
     }
     return target.listChildren();
   }
+
+
+  buildAutoCompleteTrie() {
+    const children = this.currentFolder.listChildren();
+
+    for(const child of children) {
+      this.fileTrie.insert(child.name, {
+        name: child.name,
+        isDirectory: child.isDirectory(),
+        isFile: child.isFile(),
+        node : child
+      });
+    }
+  }
+
+  gtAutoCompleteSuggestions(prefix) {
+    this.buildAutoCompleteTrie();
+
+    return this.fileTrie.searchPrefix(prefix);
+  }e
 }

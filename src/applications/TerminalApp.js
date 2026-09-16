@@ -56,17 +56,73 @@ export default class TerminalApp extends BaseApp {
       }
     }
     input.addEventListener('keydown', async (event)=> {
+
+      if(event.key == 'Tab') {
+        event.preventDefault();
+
+        this.handleAutoComplete(input, output);
+        return;
+
+      }
+
+
+
       if(event.key=='Enter'){
         const shell = this.kernel.getService("shell");
         const value = input.value;
 
         const outputShell = await shell.execute(value);
         output.innerHTML += `<p>${outputShell}</p>`
+        input.value = "";
         updatePath(this.kernel);
       }
 
     })
   }
 
+  handleAutoComplete(input, output) {
+
+      const fileSystem = this.kernel.getService("fileSystem");
+
+      const value = input.value;
+
+      const parts = value.split(/\s+/);
+
+      if(parts.length < 2) return;
+
+      const currentWord =parts[parts.length-1];
+
+      const suggestions = fileSystem.getAutoCompleteSuggestions(currentWord);
+
+      if(suggestions.length == 0) {
+        return;
+      }
+
+      if(suggestions.length == 1) {
+
+        const suggestion = suggestions[0];
+
+        parts[parts.length - 1] = suggestion.name + (suggestion.isDirectory ? "/" : "");
+
+        input.value = parts.join(" ");
+
+        return;
+      }
+
+      const options = suggestions.map(item =>
+        item.name+ (item.isDirectory ? "/" : "")
+      )
+      .join("  ");
+
+output.innerHTML += `
+    <div class="jk-autocomplete-options">
+      ${options}
+    </div>
+  `;
+
+
+
+
+  }
 
 }

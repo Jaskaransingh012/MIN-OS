@@ -21,7 +21,7 @@ export default class Dash{
                 <div class="dash-icon active" data-app="terminal">⌨</div>
                 <div class="dash-icon" data-app="file-manager">💻</div>
                 <div class="dash-icon" data-app="settings">⚙</div>
-                <div class="dash-icon" data-app="about">♢</div>
+                <div class="dash-icon" data-app="text-editor">📝</div>
             </div>
             <div class="dash-bottom">
                 <div class="dash-status"></div>
@@ -43,8 +43,8 @@ export default class Dash{
                         this.appManager.openApp('terminal',{},{},true);
 
                         break;
-                    case 'about':
-                        win = WindowFactory.createAbout(this.windowManager);
+                    case 'text-editor':
+                        this.appManager.openApp('text-editor', {},{},true);
                         break;
                     case 'file-manager':
                         this.appManager.openApp('file-manager',{},{}, true);
