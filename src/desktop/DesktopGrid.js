@@ -19,9 +19,6 @@ export default class DesktopGrid {
 
         /***
          Finding all the files and folders inside the desktop
-
-
-
          */
 
         const results = this.fileSystem.getChildren("/Desktop");
@@ -45,7 +42,7 @@ export default class DesktopGrid {
             if(data.icon == '📁'){
                  icon = new DesktopIcon(data.label, data.icon, this.appManager);
             }else{
-                icon = new DesktopIcon(data.label, data.icon);
+                icon = new DesktopIcon(data.label, data.icon, this.appManager);
             }
             icon.mount(this.container);
             this.icons.push(icon);

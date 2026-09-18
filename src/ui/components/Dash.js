@@ -20,7 +20,7 @@ export default class Dash{
             <div class="dash-icons">
                 <div class="dash-icon active" data-app="terminal">⌨</div>
                 <div class="dash-icon" data-app="file-manager">💻</div>
-                <div class="dash-icon" data-app="settings">⚙</div>
+                <div class="dash-icon" data-app="browser">🌐</div>
                 <div class="dash-icon" data-app="text-editor">📝</div>
             </div>
             <div class="dash-bottom">
@@ -49,6 +49,9 @@ export default class Dash{
                     case 'file-manager':
                         this.appManager.openApp('file-manager',{},{}, true);
 
+                        break;
+                    case 'browser':
+                        this.appManager.openApp('browser', {}, {}, true);
                         break;
                     // Add more cases for 'files', 'settings' when you have factories
                     default:

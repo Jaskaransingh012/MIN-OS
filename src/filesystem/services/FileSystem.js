@@ -153,7 +153,7 @@ export default class FileSystem {
     return this.path;
   }
 
-  async read(path) {
+   read(path) {
     const node = this._resolvePath(path);
     if (!node.isFile()) {
       throw new Error(`Not a file: ${path}`);

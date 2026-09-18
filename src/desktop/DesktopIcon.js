@@ -16,8 +16,11 @@ export default class DesktopIcon {
         `;
         this.element.style.cursor = 'pointer';
         this.element.addEventListener('click', ()=> {
-            console.log("clicked")
-            this.appManager.openApp('file-manager',{},{}, true);
+            if(this.iconSymbol=='📁') {
+                this.appManager.openApp('file-manager',{},{}, true);
+            }else if(this.iconSymbol=='🗄️') {
+                this.appManager.openApp('text-editor', {path:`/Desktop/${this.label}`}, {}, true);
+            }
         });
 
         container.appendChild(this.element);

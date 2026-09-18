@@ -5,10 +5,20 @@ export default class TextEditorApp extends BaseApp {
     super(config, kernel);
     this.title = "Text Editor";
     this.icon = "📝";
-    this.currentFile = null;
+    this.currentFile = config.path;
     this.isDirty = false;
     this.fileSystem = kernel?.getService("fileSystem");
     this.shell = kernel?.getService("shell");
+    this.undoStack = [];
+    this.redoStack = [];
+
+    this.content = null;
+
+    if(this.currentFile != null)
+    {
+      this.content = this.fileSystem.read(this.currentFile)
+      console.log("content", this.content)
+    }
   }
 
   createContent() {
@@ -20,14 +30,14 @@ export default class TextEditorApp extends BaseApp {
     menuBar.className = "jk-editor-menu-bar";
     menuBar.innerHTML = `
       <div class="jk-menu-group">
-        <button class="jk-menu-btn" id="jk-editor-new">New</button>
-        <button class="jk-menu-btn" id="jk-editor-open">Open</button>
-        <button class="jk-menu-btn" id="jk-editor-save">Save</button>
-        <button class="jk-menu-btn" id="jk-editor-save-as">Save As</button>
+        <button class="jk-menu-btn" id="jk-editor-new" title="Ctrl+N">New</button>
+        <button class="jk-menu-btn" id="jk-editor-open" title="Ctrl+O">Open</button>
+        <button class="jk-menu-btn" id="jk-editor-save" title="Ctrl+S">Save</button>
+        <button class="jk-menu-btn" id="jk-editor-save-as" title="Ctrl+Shift+S">Save As</button>
       </div>
       <div class="jk-menu-group">
-        <button class="jk-menu-btn" id="jk-editor-undo">↶ Undo</button>
-        <button class="jk-menu-btn" id="jk-editor-redo">↷ Redo</button>
+        <button class="jk-menu-btn" id="jk-editor-undo" title="Ctrl+Z">↶ Undo</button>
+        <button class="jk-menu-btn" id="jk-editor-redo" title="Ctrl+Y">↷ Redo</button>
       </div>
       <div class="jk-editor-title" id="jk-editor-file-title">Untitled</div>
     `;
@@ -59,6 +69,7 @@ export default class TextEditorApp extends BaseApp {
     textarea.className = "jk-editor-textarea";
     textarea.spellcheck = false;
     textarea.autofocus = true;
+    textarea.value = this.content;
     editorWrapper.appendChild(textarea);
 
     container.appendChild(editorWrapper);
@@ -115,6 +126,7 @@ export default class TextEditorApp extends BaseApp {
           "  " +
           textarea.value.substring(end);
         textarea.selectionStart = textarea.selectionEnd = start + 2;
+        this.isDirty = true;
         this.updateStatus();
       }
 
@@ -126,6 +138,12 @@ export default class TextEditorApp extends BaseApp {
         } else {
           this.saveFileAs();
         }
+      }
+
+      // Ctrl+Shift+S / Cmd+Shift+S: Save As
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "S") {
+        e.preventDefault();
+        this.saveFileAs();
       }
 
       // Ctrl+N / Cmd+N: New
@@ -146,8 +164,17 @@ export default class TextEditorApp extends BaseApp {
         this.toggleFindPanel();
       }
 
-      // Ctrl+Z / Cmd+Z: Undo (browser handles this, but we can enhance)
-      // Ctrl+Y / Cmd+Shift+Z: Redo (browser handles this, but we can enhance)
+      // Ctrl+Z / Cmd+Z: Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        e.preventDefault();
+        this.undo();
+      }
+
+      // Ctrl+Y / Cmd+Y: Redo
+      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+        e.preventDefault();
+        this.redo();
+      }
     });
 
     // ── Input and scroll sync ──
@@ -181,10 +208,10 @@ export default class TextEditorApp extends BaseApp {
 
     document
       .getElementById("jk-editor-undo")
-      .addEventListener("click", () => document.execCommand("undo"));
+      .addEventListener("click", () => this.undo());
     document
       .getElementById("jk-editor-redo")
-      .addEventListener("click", () => document.execCommand("redo"));
+      .addEventListener("click", () => this.redo());
 
     // ── Find/Replace ──
     document
@@ -246,12 +273,14 @@ export default class TextEditorApp extends BaseApp {
     this._textarea.value = "";
     this.currentFile = null;
     this.isDirty = false;
+    this.undoStack = [];
+    this.redoStack = [];
     this.updateTitle();
     this.updateStatus();
   }
 
   openFile() {
-    const path = prompt("Enter file path to open:");
+    const path = prompt("Enter file path to open (e.g., /path/to/file.txt):");
     if (!path) return;
 
     if (!this.fileSystem) {
@@ -260,18 +289,21 @@ export default class TextEditorApp extends BaseApp {
     }
 
     try {
-      const content = this.fileSystem.readFile(path);
+      const content = this.content ? this.content : this.fileSystem.read(path);
       this._textarea.value = content;
       this.currentFile = path;
       this.isDirty = false;
+      this.undoStack = [];
+      this.redoStack = [];
       this.updateTitle();
       this.updateStatus();
     } catch (error) {
       alert(`Error opening file: ${error.message}`);
+      console.error("Open file error:", error);
     }
   }
 
-  saveFile() {
+  async saveFile() {
     if (!this.currentFile) {
       this.saveFileAs();
       return;
@@ -283,17 +315,18 @@ export default class TextEditorApp extends BaseApp {
     }
 
     try {
-      this.fileSystem.writeFile(this.currentFile, this._textarea.value);
+      await this.fileSystem.write(this.currentFile, this._textarea.value);
       this.isDirty = false;
       this.updateStatus();
-      alert(`File saved: ${this.currentFile}`);
+      this.showNotification(`✓ File saved: ${this.currentFile}`);
     } catch (error) {
       alert(`Error saving file: ${error.message}`);
+      console.error("Save file error:", error);
     }
   }
 
-  saveFileAs() {
-    const path = prompt("Enter file path:");
+  async saveFileAs() {
+    const path = prompt("Enter file path (e.g., /path/to/newfile.txt):");
     if (!path) return;
 
     if (!this.fileSystem) {
@@ -302,14 +335,22 @@ export default class TextEditorApp extends BaseApp {
     }
 
     try {
-      this.fileSystem.writeFile(path, this._textarea.value);
+      const fileName = path.split("/").pop();
+      const dirPath = path.substring(0, path.lastIndexOf("/")) || "/";
+
+      // Create file in the file system
+      await this.fileSystem.createFile(fileName, this._textarea.value, {}, dirPath);
+
       this.currentFile = path;
       this.isDirty = false;
+      this.undoStack = [];
+      this.redoStack = [];
       this.updateTitle();
       this.updateStatus();
-      alert(`File saved: ${path}`);
+      this.showNotification(`✓ File saved: ${path}`);
     } catch (error) {
       alert(`Error saving file: ${error.message}`);
+      console.error("Save as error:", error);
     }
   }
 
@@ -334,7 +375,15 @@ export default class TextEditorApp extends BaseApp {
       textarea.selectionStart = index;
       textarea.selectionEnd = index + searchText.length;
     } else {
-      alert("No more matches found");
+      // Wrap around to beginning
+      const wrapIndex = text.indexOf(searchText);
+      if (wrapIndex !== -1) {
+        textarea.focus();
+        textarea.selectionStart = wrapIndex;
+        textarea.selectionEnd = wrapIndex + searchText.length;
+      } else {
+        this.showNotification("No matches found");
+      }
     }
   }
 
@@ -352,14 +401,21 @@ export default class TextEditorApp extends BaseApp {
       textarea.selectionStart = index;
       textarea.selectionEnd = index + searchText.length;
     } else {
-      alert("No more matches found");
+      // Wrap around to end
+      const wrapIndex = text.lastIndexOf(searchText);
+      if (wrapIndex !== -1) {
+        textarea.focus();
+        textarea.selectionStart = wrapIndex;
+        textarea.selectionEnd = wrapIndex + searchText.length;
+      } else {
+        this.showNotification("No matches found");
+      }
     }
   }
 
   replace() {
     const findText = document.getElementById("jk-editor-find-input").value;
-    const replaceText = document.getElementById("jk-editor-replace-input")
-      .value;
+    const replaceText = document.getElementById("jk-editor-replace-input").value;
 
     if (!findText) return;
 
@@ -377,18 +433,39 @@ export default class TextEditorApp extends BaseApp {
       this.isDirty = true;
       this.updateStatus();
       this.findNext();
+    } else {
+      this.showNotification("No selection or mismatch");
     }
   }
 
   replaceAll() {
     const findText = document.getElementById("jk-editor-find-input").value;
-    const replaceText = document.getElementById("jk-editor-replace-input")
-      .value;
+    const replaceText = document.getElementById("jk-editor-replace-input").value;
 
     if (!findText) return;
 
     const textarea = this._textarea;
+    const count = (textarea.value.match(new RegExp(findText, "g")) || []).length;
     textarea.value = textarea.value.split(findText).join(replaceText);
+    this.isDirty = true;
+    this.updateStatus();
+    this.showNotification(`Replaced ${count} occurrence(s)`);
+  }
+
+  undo() {
+    if (this.undoStack.length === 0) return;
+    const currentState = this._textarea.value;
+    this.redoStack.push(currentState);
+    this._textarea.value = this.undoStack.pop();
+    this.isDirty = true;
+    this.updateStatus();
+  }
+
+  redo() {
+    if (this.redoStack.length === 0) return;
+    const currentState = this._textarea.value;
+    this.undoStack.push(currentState);
+    this._textarea.value = this.redoStack.pop();
     this.isDirty = true;
     this.updateStatus();
   }
@@ -401,14 +478,34 @@ export default class TextEditorApp extends BaseApp {
       (this.isDirty ? "● " : "") + title;
   }
 
+  showNotification(message) {
+    // Simple toast notification
+    const notification = document.createElement("div");
+    notification.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #4caf50;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      z-index: 10000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 2500);
+  }
+
   onOpen() {
     this.updateStatus();
   }
 
   onClose() {
     if (this.isDirty) {
-      const confirm = window.confirm("Save changes before closing?");
-      if (confirm && this.currentFile) {
+      const shouldSave = window.confirm("Save changes before closing?");
+      if (shouldSave && this.currentFile) {
         this.saveFile();
       }
     }
@@ -418,6 +515,8 @@ export default class TextEditorApp extends BaseApp {
     this._textarea = null;
     this._lineNumbers = null;
     this._findPanel = null;
+    this.undoStack = [];
+    this.redoStack = [];
     super.destroy();
   }
 }

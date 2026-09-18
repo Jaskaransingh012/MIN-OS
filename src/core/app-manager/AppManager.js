@@ -3,10 +3,8 @@ import WindowFactory from "../window-manager/WindowFactory.js"; // adjust path
 import TerminalApp from "../../applications/TerminalApp.js";
 import FileManagerApp from "../../applications/FileManagerApp.js";
 import TextEditorApp from "../../applications/TextEditorApp.js";
+import BrowserApp from "../../applications/BrowserApp.js";
 
-/**
- * Manages running app instances, window creation, and lifecycle.
- */
 export default class AppManager {
   /**
    * @param {WindowManager} windowManager
@@ -46,7 +44,7 @@ export default class AppManager {
     const config = { ...defaultConfig, ...appConfig };
     const id = `${appId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     console.log("def in open app", def);
-    const app = new appClass(defaultConfig, this.kernel);
+    const app = new appClass(config, this.kernel);
 
 
     // Create content
@@ -182,6 +180,10 @@ export default class AppManager {
     this.registry.register("text-editor", TextEditorApp, {
     title: "Text Editor",
     icon: "📝",
+  });
+    this.registry.register("browser", BrowserApp, {
+    title: "Browser",
+    icon: "🌐",
   });
   }
 }

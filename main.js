@@ -4,7 +4,3 @@ console.log("main js loaded")
 const kernel = new Kernel();
 await kernel.start();
 
-
-
-const shell = kernel.getService("shell");
-await shell.execute('ls')
