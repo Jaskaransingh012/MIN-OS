@@ -19,7 +19,8 @@ export default class BrowserApp extends BaseApp {
     this._progressTimer = null;
     this._eventsBound = false;
 
-    this.searchEngine = "https://duckduckgo.com/html/?q=";
+    this.searchFallbackEngine = "https://duckduckgo.com/html/?q="; // only used for the manual "open on DuckDuckGo" escape hatch
+    this.SEARCH_URL_PREFIX = "internal://search?q=";
     this.quickLinks = [
       { name: "GitHub", url: "https://github.com" },
       { name: "Wikipedia", url: "https://wikipedia.org" },
@@ -33,22 +34,6 @@ export default class BrowserApp extends BaseApp {
       { name: "GitHub", url: "https://github.com" },
       { name: "MDN", url: "https://developer.mozilla.org" },
     ]);
-
-    this._frameBlocked = new Set([
-  "github.com", "www.github.com",
-  "google.com", "www.google.com",
-  "youtube.com", "www.youtube.com", "m.youtube.com",
-  "twitter.com", "x.com",
-  "facebook.com", "www.facebook.com",
-  "instagram.com", "www.instagram.com",
-  "reddit.com", "www.reddit.com",
-  "duckduckgo.com", "html.duckduckgo.com",
-  "stackoverflow.com", "linkedin.com", "www.linkedin.com",
-  "amazon.com", "www.amazon.com",
-  "netflix.com", "www.netflix.com",
-  "discord.com", "openai.com", "chat.openai.com",
-]);
-
   }
 
   // ─── persistence helpers ──────────────────────────────────────
@@ -339,6 +324,37 @@ export default class BrowserApp extends BaseApp {
       }
       .jk-err-btn:hover { box-shadow: 0 0 14px rgba(0,255,242,0.35); }
 
+      /* ── search results (in-app, no iframe) ── */
+      .jk-search-results {
+        position: absolute; inset: 0; display: none; flex-direction: column;
+        background: #05070d; overflow: hidden;
+      }
+      .jk-search-header {
+        padding: 14px 18px; font-size: 12px; color: var(--jk-text-dim);
+        border-bottom: 1px solid var(--jk-border);
+        flex-shrink: 0;
+      }
+      .jk-search-header span { color: var(--jk-cyan); }
+      .jk-search-body { flex: 1; overflow-y: auto; padding: 10px 18px 24px; }
+      .jk-search-loading { color: var(--jk-text-dim); font-size: 13px; padding: 20px 0; }
+      .jk-search-empty {
+        display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+        color: var(--jk-text-dim); font-size: 13px; padding: 20px 0;
+      }
+      .jk-search-result {
+        padding: 14px 4px; cursor: pointer;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        transition: background .15s ease;
+      }
+      .jk-search-result:hover { background: rgba(0,255,242,0.04); }
+      .jk-search-result-title {
+        color: var(--jk-cyan); font-size: 14px; margin-bottom: 3px;
+        text-shadow: 0 0 6px rgba(0,255,242,0.25);
+      }
+      .jk-search-result-url { color: #5fd9a0; font-size: 11px; margin-bottom: 5px; }
+      .jk-search-result-desc { color: var(--jk-text-dim); font-size: 12px; line-height: 1.5; }
+      .jk-search-more { padding: 18px 4px; }
+
       /* ── status bar ── */
       .jk-browser-statusbar {
         display: flex; align-items: center; justify-content: space-between;
@@ -364,6 +380,9 @@ export default class BrowserApp extends BaseApp {
       history: url ? [url] : [],
       historyIndex: url ? 0 : -1,
       bookmarked: false,
+      query: null,
+      searchResults: null,
+      searchToken: null,
     };
   }
 
@@ -388,9 +407,24 @@ export default class BrowserApp extends BaseApp {
     const looksLikeUrl = /^https?:\/\//i.test(value) ||
       (/^[\w-]+(\.[\w-]+)+/.test(value) && !value.includes(" "));
     if (looksLikeUrl) {
-      return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+      const url = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+      return { url, isSearch: false, query: null };
     }
-    return `${this.searchEngine}${encodeURIComponent(value)}`;
+    return {
+      url: `${this.SEARCH_URL_PREFIX}${encodeURIComponent(value)}`,
+      isSearch: true,
+      query: value,
+    };
+  }
+
+  _isSearchUrl(url) {
+    return typeof url === "string" && url.startsWith(this.SEARCH_URL_PREFIX);
+  }
+
+  _queryFromSearchUrl(url) {
+    if (!this._isSearchUrl(url)) return "";
+    try { return decodeURIComponent(url.slice(this.SEARCH_URL_PREFIX.length)); }
+    catch (e) { return ""; }
   }
 
   // ─── createContent (main entry) ───────────────────────────────
@@ -433,8 +467,7 @@ export default class BrowserApp extends BaseApp {
       <div class="jk-progress-bar"><div class="jk-progress-fill" id="jk-progress-fill"></div></div>
 
       <div class="jk-browser-viewport">
-        <iframe class="jk-browser-frame" id="jk-browser-frame"
-        referrerpolicy="no-referrer"></iframe>
+        <iframe class="jk-browser-frame" id="jk-browser-frame" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
 
         <div class="jk-newtab-page" id="jk-newtab-page">
           <div class="jk-newtab-greeting" id="jk-newtab-greeting"></div>
@@ -447,13 +480,18 @@ export default class BrowserApp extends BaseApp {
         </div>
 
         <div class="jk-browser-error" id="jk-browser-error">
-          <div class="jk-err-icon">⚠</div>
-          <h3>This site may not allow embedding</h3>
+          <div class="jk-err-icon" id="jk-err-icon">⚠</div>
+          <h3 id="jk-err-title">This site may not allow embedding</h3>
           <p id="jk-err-detail">Some sites block being displayed inside another page for security reasons.</p>
-          <div class="jk-err-actions">
+          <div class="jk-err-actions" id="jk-err-actions">
             <button class="jk-err-btn" id="jk-err-retry">Retry</button>
             <button class="jk-err-btn" id="jk-err-open">Open externally ↗</button>
           </div>
+        </div>
+
+        <div class="jk-search-results" id="jk-search-results">
+          <div class="jk-search-header">Results for <span id="jk-search-query"></span></div>
+          <div class="jk-search-body" id="jk-search-body"></div>
         </div>
       </div>
 
@@ -552,6 +590,7 @@ export default class BrowserApp extends BaseApp {
     this._container.querySelector("#jk-browser-frame").style.display = "none";
     this._container.querySelector("#jk-newtab-page").style.display = "flex";
     this._container.querySelector("#jk-browser-error").style.display = "none";
+    this._container.querySelector("#jk-search-results").style.display = "none";
     const addressInput = this._container.querySelector("#jk-address-input");
     addressInput.value = "";
     this._setStatus("Ready", "");
@@ -562,15 +601,113 @@ export default class BrowserApp extends BaseApp {
     this._container.querySelector("#jk-browser-frame").style.display = "block";
     this._container.querySelector("#jk-newtab-page").style.display = "none";
     this._container.querySelector("#jk-browser-error").style.display = "none";
+    this._container.querySelector("#jk-search-results").style.display = "none";
+  }
+
+  _showSearchResults() {
+    this._container.querySelector("#jk-browser-frame").style.display = "none";
+    this._container.querySelector("#jk-newtab-page").style.display = "none";
+    this._container.querySelector("#jk-browser-error").style.display = "none";
+    this._container.querySelector("#jk-search-results").style.display = "flex";
   }
 
   _showError(url) {
     this._container.querySelector("#jk-browser-frame").style.display = "none";
     this._container.querySelector("#jk-newtab-page").style.display = "none";
+    this._container.querySelector("#jk-search-results").style.display = "none";
     const errBox = this._container.querySelector("#jk-browser-error");
     errBox.style.display = "flex";
+    this._container.querySelector("#jk-err-icon").textContent = "⚠";
+    this._container.querySelector("#jk-err-title").textContent = "This site refused to load here";
     this._container.querySelector("#jk-err-detail").textContent =
-      `"${this._domain(url) || url}" refused to load here. Try opening it in a real browser tab instead.`;
+      `"${this._domain(url) || url}" blocks itself from being shown inside another page (a common security setting). Open it in a real browser tab instead.`;
+    this._container.querySelector("#jk-err-actions").innerHTML = `
+      <button class="jk-err-btn" id="jk-err-retry">Retry</button>
+      <button class="jk-err-btn" id="jk-err-open">Open externally ↗</button>
+    `;
+  }
+
+  async _runSearch(tab, query) {
+    const token = Symbol("search");
+    tab.searchToken = token;
+    tab.query = query;
+
+    this._showSearchResults();
+    this._renderSearchState({ status: "loading", query });
+
+    try {
+      const apiUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=8&namespace=0&format=json&origin=*`;
+      const res = await fetch(apiUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const [, titles, descriptions, links] = await res.json();
+
+      if (tab.searchToken !== token) return; // navigated away while fetching
+
+      const results = titles.map((title, i) => ({
+        title,
+        description: descriptions[i] || "",
+        url: links[i],
+      }));
+      tab.searchResults = results;
+
+      this._renderSearchState({ status: results.length ? "results" : "empty", query, results });
+      this._setStatus("Done", `search: ${query}`);
+    } catch (err) {
+      if (tab.searchToken !== token) return;
+      this._renderSearchState({ status: "error", query });
+      this._setStatus("Search failed", `search: ${query}`);
+    }
+  }
+
+  _renderSearchState({ status, query, results = [] }) {
+    const body = this._container.querySelector("#jk-search-body");
+    const fallbackUrl = `${this.searchFallbackEngine}${encodeURIComponent(query)}`;
+    this._container.querySelector("#jk-search-query").textContent = `"${query}"`;
+
+    if (status === "loading") {
+      body.innerHTML = `<div class="jk-search-loading">Searching…</div>`;
+      return;
+    }
+    if (status === "error") {
+      body.innerHTML = `
+        <div class="jk-search-empty">
+          <p>Couldn't reach the search index right now.</p>
+          <button class="jk-err-btn" id="jk-search-fallback">Open on DuckDuckGo instead ↗</button>
+        </div>`;
+      body.querySelector("#jk-search-fallback").addEventListener("click", () => {
+        window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+      });
+      return;
+    }
+    if (status === "empty") {
+      body.innerHTML = `
+        <div class="jk-search-empty">
+          <p>No quick matches for "${query}".</p>
+          <button class="jk-err-btn" id="jk-search-fallback">Search the full web instead ↗</button>
+        </div>`;
+      body.querySelector("#jk-search-fallback").addEventListener("click", () => {
+        window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+      });
+      return;
+    }
+
+    body.innerHTML = results.map(r => `
+      <div class="jk-search-result" data-url="${r.url}">
+        <div class="jk-search-result-title">${r.title}</div>
+        <div class="jk-search-result-url">${r.url}</div>
+        ${r.description ? `<div class="jk-search-result-desc">${r.description}</div>` : ""}
+      </div>
+    `).join("") + `
+      <div class="jk-search-more">
+        <button class="jk-err-btn" id="jk-search-fallback">More results on DuckDuckGo ↗</button>
+      </div>`;
+
+    body.querySelectorAll(".jk-search-result").forEach(el => {
+      el.addEventListener("click", () => this.navigate(el.dataset.url));
+    });
+    body.querySelector("#jk-search-fallback").addEventListener("click", () => {
+      window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+    });
   }
 
   _setStatus(text, url) {
@@ -605,8 +742,9 @@ export default class BrowserApp extends BaseApp {
   navigate(rawInput) {
     const tab = this._getTab(this.activeTabId);
     if (!tab) return;
-    const url = this._normalizeInput(rawInput);
-    if (!url) return;
+    const result = this._normalizeInput(rawInput);
+    if (!result) return;
+    const { url, isSearch, query } = result;
 
     // trim forward history, push new entry
     tab.history = tab.history.slice(0, tab.historyIndex + 1);
@@ -614,9 +752,20 @@ export default class BrowserApp extends BaseApp {
     tab.historyIndex = tab.history.length - 1;
     tab.url = url;
     tab.isNewTab = false;
-    tab.title = this._domain(url) || url;
+    tab.title = isSearch ? `Search: ${query}` : (this._domain(url) || url);
 
-    this._loadUrl(url);
+    const addressInput = this._container.querySelector("#jk-address-input");
+    addressInput.value = isSearch ? query : url;
+    this._setSecurity(isSearch ? null : url);
+    this._updateBookmarkButton(url);
+    this._renderTabs();
+    this._syncNavButtons();
+
+    if (isSearch) {
+      this._runSearch(tab, query);
+    } else {
+      this._loadUrl(url);
+    }
   }
 
   goBack() {
@@ -624,7 +773,7 @@ export default class BrowserApp extends BaseApp {
     if (!tab || tab.historyIndex <= 0) return;
     tab.historyIndex -= 1;
     tab.url = tab.history[tab.historyIndex];
-    this._loadUrl(tab.url);
+    this._revisit(tab);
   }
 
   goForward() {
@@ -632,13 +781,32 @@ export default class BrowserApp extends BaseApp {
     if (!tab || tab.historyIndex >= tab.history.length - 1) return;
     tab.historyIndex += 1;
     tab.url = tab.history[tab.historyIndex];
-    this._loadUrl(tab.url);
+    this._revisit(tab);
   }
 
   reload() {
     const tab = this._getTab(this.activeTabId);
     if (!tab || !tab.url) return;
-    this._loadUrl(tab.url, true);
+    if (this._isSearchUrl(tab.url)) {
+      this._runSearch(tab, this._queryFromSearchUrl(tab.url));
+    } else {
+      this._loadUrl(tab.url, true);
+    }
+  }
+
+  // Re-displays a URL already in a tab's history (used by back/forward).
+  _revisit(tab) {
+    const addressInput = this._container.querySelector("#jk-address-input");
+    if (this._isSearchUrl(tab.url)) {
+      const query = this._queryFromSearchUrl(tab.url);
+      addressInput.value = query;
+      this._setSecurity(null);
+      this._updateBookmarkButton(tab.url);
+      this._runSearch(tab, query);
+    } else {
+      this._loadUrl(tab.url);
+    }
+    this._syncNavButtons();
   }
 
   goHome() {
@@ -652,70 +820,63 @@ export default class BrowserApp extends BaseApp {
   }
 
   _loadUrl(url, forceReload = false) {
-  const frame = this._container.querySelector("#jk-browser-frame");
-  const addressInput = this._container.querySelector("#jk-address-input");
+    const frame = this._container.querySelector("#jk-browser-frame");
+    const addressInput = this._container.querySelector("#jk-address-input");
+    const requestingTabId = this.activeTabId;
 
-  addressInput.value = url;
-  this._setSecurity(url);
-  this._updateBookmarkButton(url);
-
-  // Hard block: known frame-busters. Don't even try — show the fallback.
-  if (this._isKnownFrameBlocker(url)) {
-    this._setStatus("Blocked by site", url);
-    this._setProgress(0);
-    this._showError(url);
-    this._renderTabs();
-    this._syncNavButtons();
-    return;
-  }
-
-  this._showFrame();
-  this._setStatus("Loading…", url);
-  this._setProgress(15);
-
-  clearTimeout(this._loadFailTimer);
-  clearTimeout(this._loadTimeout);
-  this._loadFailTimer = setTimeout(() => this._setProgress(60), 200);
-
-  // Heuristic timeout: if nothing has settled in 8s, it's probably framed-blocked.
-  this._loadTimeout = setTimeout(() => {
-    this._setProgress(0);
-    this._setStatus("No response", url);
-    this._showError(url);
-  }, 8000);
-
-  const onLoad = () => {
-    clearTimeout(this._loadTimeout);
-    this._setProgress(100);
-    frame.removeEventListener("load", onLoad);
-
-    // Try to peek at the frame's location. Cross-origin success throws;
-    // same-origin "about:blank" means the browser swapped in its error page.
-    try {
-      const href = frame.contentWindow.location.href;
-      if (href === "about:blank" && url !== "about:blank") {
-        this._setStatus("Blocked by site", url);
-        this._showError(url);
-        return;
-      }
-    } catch (e) {
-      // Cross-origin — this is the happy path for loaded sites.
+    // cancel any pending block-detection / progress timers from a previous navigation
+    clearTimeout(this._loadFailTimer);
+    clearTimeout(this._blockTimer);
+    if (this._pendingLoadHandler) {
+      frame.removeEventListener("load", this._pendingLoadHandler);
+      this._pendingLoadHandler = null;
     }
 
-    this._setStatus("Done", url);
-  };
-  frame.addEventListener("load", onLoad);
+    this._showFrame();
+    addressInput.value = url;
+    this._setSecurity(url);
+    this._setStatus("Loading…", url);
+    this._updateBookmarkButton(url);
+    this._setProgress(15);
 
-  if (forceReload) {
-    frame.src = "about:blank";
-    requestAnimationFrame(() => { frame.src = url; });
-  } else {
-    frame.src = url;
+    this._loadFailTimer = setTimeout(() => this._setProgress(60), 200);
+
+    // Sites that send a `frame-ancestors` CSP header abort the navigation
+    // silently — no 'load' event ever fires for the blocked document. If we
+    // haven't heard back after a few seconds, assume it was blocked and show
+    // the fallback instead of leaving the user staring at a blank iframe.
+    this._blockTimer = setTimeout(() => {
+      const stillRelevant = this.activeTabId === requestingTabId &&
+        this._getTab(requestingTabId)?.url === url;
+      if (!stillRelevant) return; // user navigated elsewhere already
+      this._setProgress(0);
+      this._setStatus("Blocked by site", url);
+      this._showError(url);
+    }, 3500);
+
+    const onLoad = () => {
+      clearTimeout(this._blockTimer);
+      this._setProgress(100);
+      this._setStatus("Done", url);
+      // load fired, so it wasn't blocked — make sure the frame (not the
+      // error screen) is what's visible, but only if we're still on this tab
+      if (this.activeTabId === requestingTabId) this._showFrame();
+      frame.removeEventListener("load", onLoad);
+      this._pendingLoadHandler = null;
+    };
+    this._pendingLoadHandler = onLoad;
+    frame.addEventListener("load", onLoad);
+
+    if (forceReload) {
+      frame.src = "about:blank";
+      requestAnimationFrame(() => { frame.src = url; });
+    } else {
+      frame.src = url;
+    }
+
+    this._renderTabs();
+    this._syncNavButtons();
   }
-
-  this._renderTabs();
-  this._syncNavButtons();
-}
 
   _syncNavButtons() {
     const tab = this._getTab(this.activeTabId);
@@ -750,6 +911,19 @@ export default class BrowserApp extends BaseApp {
     this._renderTabs();
     if (tab.isNewTab || !tab.url) {
       this._showNewTabPage();
+    } else if (this._isSearchUrl(tab.url)) {
+      const query = this._queryFromSearchUrl(tab.url);
+      const addressInput = this._container.querySelector("#jk-address-input");
+      addressInput.value = query;
+      this._setSecurity(null);
+      this._updateBookmarkButton(tab.url);
+      this._showSearchResults();
+      if (tab.searchResults) {
+        this._renderSearchState({ status: tab.searchResults.length ? "results" : "empty", query, results: tab.searchResults });
+        this._setStatus("Ready", `search: ${query}`);
+      } else {
+        this._runSearch(tab, query);
+      }
     } else {
       const frame = this._container.querySelector("#jk-browser-frame");
       this._showFrame();
@@ -856,11 +1030,13 @@ export default class BrowserApp extends BaseApp {
       if (tab && tab.url) window.open(tab.url, "_blank", "noopener,noreferrer");
     });
 
-    // error overlay buttons
-    root.querySelector("#jk-err-retry").addEventListener("click", () => this.reload());
-    root.querySelector("#jk-err-open").addEventListener("click", () => {
+    // error/info overlay buttons (delegated — the buttons inside get regenerated dynamically)
+    root.querySelector("#jk-browser-error").addEventListener("click", (e) => {
       const tab = this._getTab(this.activeTabId);
-      if (tab && tab.url) window.open(tab.url, "_blank", "noopener,noreferrer");
+      if (e.target.closest("#jk-err-retry")) this.reload();
+      if (e.target.closest("#jk-err-open")) {
+        if (tab && tab.url) window.open(tab.url, "_blank", "noopener,noreferrer");
+      }
     });
 
     // tabs bar: switch / close / add (event delegation, tabs re-render often)
@@ -895,15 +1071,6 @@ export default class BrowserApp extends BaseApp {
     root.addEventListener("keydown", this._keydownHandler);
   }
 
-  _isKnownFrameBlocker(url) {
-  const host = this._domain(url).replace(/^www\./, "");
-  for (const d of this._frameBlocked) {
-    const bare = d.replace(/^www\./, "");
-    if (host === bare || host.endsWith("." + bare)) return true;
-  }
-  return false;
-}
-
   // ─── lifecycle ──────────────────────────────────────────────
 
   onOpen() {
@@ -912,11 +1079,11 @@ export default class BrowserApp extends BaseApp {
   }
 
   onClose() {
-  clearInterval(this._clockInterval);
-  clearTimeout(this._progressResetTimer);
-  clearTimeout(this._loadFailTimer);
-  clearTimeout(this._loadTimeout);   // ← add this
-}
+    clearInterval(this._clockInterval);
+    clearTimeout(this._progressResetTimer);
+    clearTimeout(this._loadFailTimer);
+    clearTimeout(this._blockTimer);
+  }
 
   destroy() {
     this.onClose();
