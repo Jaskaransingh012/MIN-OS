@@ -327,7 +327,7 @@ export default class FileSystem {
     }
   }
 
-  gtAutoCompleteSuggestions(prefix) {
+  getAutoCompleteSuggestions(prefix) {
     this.buildAutoCompleteTrie();
 
     return this.fileTrie.searchPrefix(prefix);
