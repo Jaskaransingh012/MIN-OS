@@ -2,13 +2,7 @@ import BaseApp from './BaseApp.js';
 
 
 export default class AppFactory {
-  /**
-   * Create an app instance (without a window).
-   * @param {string} appId - Registered app ID
-   * @param {AppRegistry} registry
-   * @param {Object} overrides - Override config values
-   * @returns {BaseApp}
-   */
+
   static createApp(appId, registry, overrides = {}) {
     const def = registry.get(appId);
     if (!def) throw new Error(`App "${appId}" not registered.`);

@@ -74,7 +74,7 @@ export default class Bootstrapper {
         // Check if it already exists under root
         const root = this.fileSystem.root;
         if (!root.hasChild(dirName)) {
-          await this.fileSystem.createDirectory(dirName, '/');
+          await this.fileSystem.createDirectory(dirName, this.fileSystem.root);
           this.boot.addLog(`Created default directory: /${dirName}`);
         }
       } catch (err) {
