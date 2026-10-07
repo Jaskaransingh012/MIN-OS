@@ -2,10 +2,6 @@ import BaseApp from "../core/app-manager/BaseApp.js";
 
 export default class TerminalApp extends BaseApp {
 
-  // ─── commands registry ────────────────────────────────────────
-
-  // ─── createContent (main entry) ──────────────────────────────
-
 
   createContent() {
 
@@ -13,14 +9,12 @@ export default class TerminalApp extends BaseApp {
     container.className = 'jk-terminal';
 
 
-
-    // ── output ──
     const output = document.createElement('div');
     output.className = 'jk-term-output';
     output.id = "jk-term-output"
     container.appendChild(output);
 
-    // ── input row ──
+
     const inputRow = document.createElement('div');
     inputRow.className = 'jk-term-input-row';
     inputRow.innerHTML = `
@@ -34,9 +28,6 @@ export default class TerminalApp extends BaseApp {
     container.appendChild(inputRow);
 
 
-
-
-    // store container ref for cleanup
     this._container = container;
     return container;
   }
