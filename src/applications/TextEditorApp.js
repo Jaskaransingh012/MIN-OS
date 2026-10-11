@@ -9,15 +9,11 @@ export default class TextEditorApp extends BaseApp {
     this.isDirty = false;
     this.fileSystem = kernel?.getService("fileSystem");
     this.shell = kernel?.getService("shell");
-    this.undoStack = [];
-    this.redoStack = [];
 
-    this.content = null;
+    this.content = "";
 
-    if(this.currentFile != null)
-    {
-      this.content = this.fileSystem.read(this.currentFile)
-      console.log("content", this.content)
+    if (this.currentFile != null && this.fileSystem) {
+      this.content = this.fileSystem.read(this.currentFile) ?? "";
     }
   }
 
@@ -33,11 +29,6 @@ export default class TextEditorApp extends BaseApp {
         <button class="jk-menu-btn" id="jk-editor-new" title="Ctrl+N">New</button>
         <button class="jk-menu-btn" id="jk-editor-open" title="Ctrl+O">Open</button>
         <button class="jk-menu-btn" id="jk-editor-save" title="Ctrl+S">Save</button>
-        <button class="jk-menu-btn" id="jk-editor-save-as" title="Ctrl+Shift+S">Save As</button>
-      </div>
-      <div class="jk-menu-group">
-        <button class="jk-menu-btn" id="jk-editor-undo" title="Ctrl+Z">↶ Undo</button>
-        <button class="jk-menu-btn" id="jk-editor-redo" title="Ctrl+Y">↷ Redo</button>
       </div>
       <div class="jk-editor-title" id="jk-editor-file-title">Untitled</div>
     `;
@@ -104,7 +95,6 @@ export default class TextEditorApp extends BaseApp {
   _bindEvents() {
     const textarea = this._textarea;
     const lineNumbers = this._lineNumbers;
-    const findPanel = this._findPanel;
 
     // ── Line number sync ──
     const updateLineNumbers = () => {
@@ -127,23 +117,14 @@ export default class TextEditorApp extends BaseApp {
           textarea.value.substring(end);
         textarea.selectionStart = textarea.selectionEnd = start + 2;
         this.isDirty = true;
+        updateLineNumbers();
         this.updateStatus();
       }
 
       // Ctrl+S / Cmd+S: Save
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        if (this.currentFile) {
-          this.saveFile();
-        } else {
-          this.saveFileAs();
-        }
-      }
-
-      // Ctrl+Shift+S / Cmd+Shift+S: Save As
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "S") {
-        e.preventDefault();
-        this.saveFileAs();
+        this.saveFile();
       }
 
       // Ctrl+N / Cmd+N: New
@@ -163,18 +144,6 @@ export default class TextEditorApp extends BaseApp {
         e.preventDefault();
         this.toggleFindPanel();
       }
-
-      // Ctrl+Z / Cmd+Z: Undo
-      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
-        e.preventDefault();
-        this.undo();
-      }
-
-      // Ctrl+Y / Cmd+Y: Redo
-      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
-        e.preventDefault();
-        this.redo();
-      }
     });
 
     // ── Input and scroll sync ──
@@ -189,29 +158,15 @@ export default class TextEditorApp extends BaseApp {
     });
 
     // ── Menu buttons ──
-    document.getElementById("jk-editor-new").addEventListener("click", () =>
-      this.newFile()
-    );
-    document.getElementById("jk-editor-open").addEventListener("click", () =>
-      this.openFile()
-    );
-    document.getElementById("jk-editor-save").addEventListener("click", () => {
-      if (this.currentFile) {
-        this.saveFile();
-      } else {
-        this.saveFileAs();
-      }
-    });
-    document.getElementById("jk-editor-save-as").addEventListener("click", () =>
-      this.saveFileAs()
-    );
-
     document
-      .getElementById("jk-editor-undo")
-      .addEventListener("click", () => this.undo());
+      .getElementById("jk-editor-new")
+      .addEventListener("click", () => this.newFile());
     document
-      .getElementById("jk-editor-redo")
-      .addEventListener("click", () => this.redo());
+      .getElementById("jk-editor-open")
+      .addEventListener("click", () => this.openFile());
+    document
+      .getElementById("jk-editor-save")
+      .addEventListener("click", () => this.saveFile());
 
     // ── Find/Replace ──
     document
@@ -246,15 +201,18 @@ export default class TextEditorApp extends BaseApp {
 
   updateStatus() {
     const textarea = this._textarea;
-    const lines = textarea.value.split("\n");
+    if (!textarea) return;
+
     const currentLine =
       textarea.value.substring(0, textarea.selectionStart).split("\n").length;
     const currentCol =
       textarea.selectionStart -
       textarea.value.lastIndexOf("\n", textarea.selectionStart - 1);
 
-    document.getElementById("jk-editor-line-count").textContent = `Line ${currentLine}, Col ${currentCol}`;
-    document.getElementById("jk-editor-file-size").textContent = `Size: ${(textarea.value.length / 1024).toFixed(2)} KB`;
+    document.getElementById("jk-editor-line-count").textContent =
+      `Line ${currentLine}, Col ${currentCol}`;
+    document.getElementById("jk-editor-file-size").textContent =
+      `Size: ${(textarea.value.length / 1024).toFixed(2)} KB`;
 
     const statusEl = document.getElementById("jk-editor-file-status");
     if (this.isDirty) {
@@ -266,6 +224,13 @@ export default class TextEditorApp extends BaseApp {
     }
   }
 
+  _refreshLineNumbers() {
+    const lines = this._textarea.value.split("\n");
+    this._lineNumbers.innerHTML = lines
+      .map((_, i) => `<div class="jk-line-number">${i + 1}</div>`)
+      .join("");
+  }
+
   newFile() {
     if (this.isDirty) {
       if (!confirm("Discard unsaved changes?")) return;
@@ -273,8 +238,7 @@ export default class TextEditorApp extends BaseApp {
     this._textarea.value = "";
     this.currentFile = null;
     this.isDirty = false;
-    this.undoStack = [];
-    this.redoStack = [];
+    this._refreshLineNumbers();
     this.updateTitle();
     this.updateStatus();
   }
@@ -289,12 +253,11 @@ export default class TextEditorApp extends BaseApp {
     }
 
     try {
-      const content = this.content ? this.content : this.fileSystem.read(path);
+      const content = this.fileSystem.read(path) ?? "";
       this._textarea.value = content;
       this.currentFile = path;
       this.isDirty = false;
-      this.undoStack = [];
-      this.redoStack = [];
+      this._refreshLineNumbers();
       this.updateTitle();
       this.updateStatus();
     } catch (error) {
@@ -303,54 +266,39 @@ export default class TextEditorApp extends BaseApp {
     }
   }
 
+  // Saves to the current file. If the file is untitled, asks for a path first.
   async saveFile() {
-    if (!this.currentFile) {
-      this.saveFileAs();
-      return;
-    }
-
     if (!this.fileSystem) {
       alert("File system service not available");
       return;
     }
 
     try {
-      await this.fileSystem.write(this.currentFile, this._textarea.value);
+      if (this.currentFile) {
+        await this.fileSystem.write(this.currentFile, this._textarea.value);
+      } else {
+        const path = prompt("Enter file path (e.g., /Documents/notes.txt):");
+        if (!path) return;
+
+        const fileName = path.split("/").pop();
+        const dirPath = path.substring(0, path.lastIndexOf("/")) || "/";
+        await this.fileSystem.createFile(
+          fileName,
+          this._textarea.value,
+          {},
+          dirPath
+        );
+
+        this.currentFile = path;
+      }
+
       this.isDirty = false;
+      this.updateTitle();
       this.updateStatus();
       this.showNotification(`✓ File saved: ${this.currentFile}`);
     } catch (error) {
       alert(`Error saving file: ${error.message}`);
       console.error("Save file error:", error);
-    }
-  }
-
-  async saveFileAs() {
-    const path = prompt("Enter file path (e.g., /path/to/newfile.txt):");
-    if (!path) return;
-
-    if (!this.fileSystem) {
-      alert("File system service not available");
-      return;
-    }
-
-    try {
-      const fileName = path.split("/").pop();
-      const dirPath = path.substring(0, path.lastIndexOf("/")) || "/";
-
-      // Create file in the file system
-      await this.fileSystem.createFile(fileName, this._textarea.value, {}, dirPath);
-
-      this.currentFile = path;
-      this.isDirty = false;
-      this.undoStack = [];
-      this.redoStack = [];
-      this.updateTitle();
-      this.updateStatus();
-      this.showNotification(`✓ File saved: ${path}`);
-    } catch (error) {
-      alert(`Error saving file: ${error.message}`);
-      console.error("Save as error:", error);
     }
   }
 
@@ -431,6 +379,7 @@ export default class TextEditorApp extends BaseApp {
         replaceText +
         textarea.value.substring(textarea.selectionEnd);
       this.isDirty = true;
+      this._refreshLineNumbers();
       this.updateStatus();
       this.findNext();
     } else {
@@ -445,29 +394,14 @@ export default class TextEditorApp extends BaseApp {
     if (!findText) return;
 
     const textarea = this._textarea;
-    const count = (textarea.value.match(new RegExp(findText, "g")) || []).length;
-    textarea.value = textarea.value.split(findText).join(replaceText);
+    // split/join counts plain text, so characters like ( or * can't break it
+    const parts = textarea.value.split(findText);
+    const count = parts.length - 1;
+    textarea.value = parts.join(replaceText);
     this.isDirty = true;
+    this._refreshLineNumbers();
     this.updateStatus();
     this.showNotification(`Replaced ${count} occurrence(s)`);
-  }
-
-  undo() {
-    if (this.undoStack.length === 0) return;
-    const currentState = this._textarea.value;
-    this.redoStack.push(currentState);
-    this._textarea.value = this.undoStack.pop();
-    this.isDirty = true;
-    this.updateStatus();
-  }
-
-  redo() {
-    if (this.redoStack.length === 0) return;
-    const currentState = this._textarea.value;
-    this.undoStack.push(currentState);
-    this._textarea.value = this.redoStack.pop();
-    this.isDirty = true;
-    this.updateStatus();
   }
 
   updateTitle() {
@@ -499,6 +433,7 @@ export default class TextEditorApp extends BaseApp {
   }
 
   onOpen() {
+    this.updateTitle();
     this.updateStatus();
   }
 
@@ -515,8 +450,6 @@ export default class TextEditorApp extends BaseApp {
     this._textarea = null;
     this._lineNumbers = null;
     this._findPanel = null;
-    this.undoStack = [];
-    this.redoStack = [];
     super.destroy();
   }
 }
