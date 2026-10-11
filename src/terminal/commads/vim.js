@@ -1,29 +1,30 @@
 export default class VimEditorCommand {
   constructor(kernel) {
     this.fileSystem = kernel.getService("fileSystem");
-    this.terminal = null; // will be set in startEditor
-    this.state = null; // editor state object
+    this.terminal = null;
+    this.state = null;
     this.vimEditor = null;
+    this.overlay = null;
+    this.statusBar = null;
+    this.hiddenNodes = [];
     this.filePath = null;
+    this.dirty = false;
+    this.quitArmed = false;
   }
 
   async _execute(args) {
     try {
       const fileName = args[0];
       if (!fileName) throw new Error("No file name provided");
+
       this.filePath = this.fileSystem.path + "/" + fileName;
 
-
-      const fileInstance =
-        this.fileSystem.currentFolder._children.get(fileName);
+      const fileInstance = this.fileSystem.currentFolder._children.get(fileName);
       if (!fileInstance) throw new Error(`File "${fileName}" not found`);
 
-      // Read file content (assume fileInstance.content is a string)
-      const content = fileInstance.content || "";
-
       this.state = {
-        content: content,
-        fileInstance: fileInstance,
+        content: fileInstance.content || "",
+        fileInstance,
       };
 
       this.startEditor();
@@ -33,59 +34,107 @@ export default class VimEditorCommand {
   }
 
   startEditor() {
-    // Get the terminal element
     this.terminal = document.getElementsByClassName("jk-terminal")[0];
     if (!this.terminal) throw new Error("Terminal element not found");
 
-    // store the innerhtml of terminal so that the previous terminal state in managed
-    this.state.previousTerminalState = this.terminal.innerHTML;
+    // Hide existing terminal content instead of destroying it,
+    // so its event listeners survive.
+    this.hiddenNodes = Array.from(this.terminal.children).map((node) => ({
+      node,
+      display: node.style.display,
+    }));
+    this.hiddenNodes.forEach(({ node }) => (node.style.display = "none"));
 
-    // Build editor UI
+    this.overlay = document.createElement("div");
+    this.overlay.className = "flex flex-col w-full h-full";
 
-    const vimUi = `
+    this.vimEditor = document.createElement("textarea");
+    this.vimEditor.id = "vim-editor";
+    this.vimEditor.name = "vim-editor";
+    this.vimEditor.className =
+      "flex-1 w-full min-h-0 bg-transparent text-white outline-none resize-none";
+    this.vimEditor.value = this.state.content; // safe, no HTML parsing
 
-            <textarea id="vim-editor" name="vim-editor"  class="min-w-full min-h-full text-white">${this.state.content}</textarea>
+    this.statusBar = document.createElement("div");
+    this.statusBar.className = "text-xs text-gray-400 py-1";
+    this.setStatus("Alt+W save | Esc quit | Alt+Q save & quit");
 
-        `;
-    this.terminal.innerHTML = vimUi;
-    this.addEvetListener();
+    this.overlay.append(this.vimEditor, this.statusBar);
+    this.terminal.appendChild(this.overlay);
+
+    this.addEventListeners();
+    this.vimEditor.focus();
   }
 
-  addEvetListener() {
-    const activeKeys = {};
+  addEventListeners() {
+    this.vimEditor.addEventListener("input", () => {
+      this.dirty = true;
+      this.quitArmed = false;
+    });
 
-    this.vimEditor = document.getElementById("vim-editor");
-    this.vimEditor.addEventListener("keydown", (event) => {
-      activeKeys[event.key.toLowerCase()] = true;
+    this.vimEditor.addEventListener("keydown", async (event) => {
+      // Keep keystrokes away from the terminal's own handlers
+      event.stopPropagation();
 
-      if (activeKeys["alt"] && activeKeys["w"]) {
-        console.log("control + w combination detected!");
-        this.writeDocument();
-
-        // Optional: clear state or execute your custom function
+      // Alt + W -> save
+      if (event.altKey && event.code === "KeyW") {
+        event.preventDefault();
+        await this.writeDocument();
+        return;
       }
 
-      this.vimEditor.addEventListener("keyup", (event) => {
-        // Remove the key from the active object once released
-        activeKeys[event.key.toLowerCase()] = false;
-      });
+      // Alt + Q -> save and quit
+      if (event.altKey && event.code === "KeyQ") {
+        event.preventDefault();
+        await this.writeDocument();
+        this.destroy();
+        return;
+      }
+
+      // Esc -> quit (warn once if unsaved)
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (this.dirty && !this.quitArmed) {
+          this.quitArmed = true;
+          this.setStatus("Unsaved changes! Alt+W to save, or press Esc again to discard.");
+          return;
+        }
+        this.destroy();
+      }
     });
   }
 
+  setStatus(text) {
+    if (this.statusBar) this.statusBar.textContent = text;
+  }
 
-  async writeDocument (){
-    const fileInstance = this.state.fileInstance;
+  async writeDocument() {
     const newContent = this.vimEditor.value;
-    fileInstance.content = newContent;
+    this.state.fileInstance.content = newContent;
     await this.fileSystem.write(this.filePath, newContent);
-
+    this.dirty = false;
+    this.quitArmed = false;
+    this.setStatus("Saved.");
   }
 
   destroy() {
-    if (this.terminal) {
-      this.terminal.innerHTML = this.state.previousTerminalState;
-    }
+    if (this.overlay) this.overlay.remove();
+
+    this.hiddenNodes.forEach(({ node, display }) => {
+      node.style.display = display;
+    });
+
+    // Return focus to the terminal's input
+    const input = this.terminal?.querySelector("input, textarea");
+    if (input) input.focus();
+
+    this.overlay = null;
+    this.vimEditor = null;
+    this.statusBar = null;
+    this.hiddenNodes = [];
     this.state = null;
     this.terminal = null;
+    this.dirty = false;
+    this.quitArmed = false;
   }
 }
